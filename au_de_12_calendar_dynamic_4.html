@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Au Dé 12 - Calendrier Dynamique</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header .subtitle {
+            font-size: 1.3em;
+            opacity: 0.95;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 1em;
+            opacity: 0.9;
+            margin-top: 10px;
+        }
+
+        .sync-status {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 20px;
+            background: #f5f5f5;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: 2px solid #D2691E;
+            background: white;
+            color: #D2691E;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 1em;
+        }
+
+        .btn:hover {
+            background: #D2691E;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn.active {
+            background: #D2691E;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #8B4513;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #D2691E;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .calendar-wrapper {
+            padding: 30px 20px;
+        }
+
+        .month-group {
+            margin-bottom: 40px;
+        }
+
+        .month-title {
+            font-size: 1.8em;
+            color: #8B4513;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #D2691E;
+        }
+
+        .calendar {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background: white;
+        }
+
+        .weekday-header {
+            text-align: center;
+            font-weight: bold;
+            background: #8B4513;
+            color: white;
+            padding: 15px;
+            border: 2px solid #8B4513;
+            font-size: 1.1em;
+        }
+
+        .calendar td {
+            border: 2px solid #ddd;
+            vertical-align: top;
+            padding: 10px;
+            height: 140px;
+            background: white;
+        }
+
+        .calendar td:hover {
+            background: #fff9f0;
+        }
+
+        .day-number {
+            font-weight: bold;
+            font-size: 1.4em;
+            margin-bottom: 8px;
+            color: #8B4513;
+        }
+
+        .day-other-month {
+            background: #f5f5f5;
+            color: #aaa;
+        }
+
+        .day-other-month .day-number {
+            color: #ccc;
+        }
+
+        .events-container {
+            font-size: 0.85em;
+            height: 105px;
+            overflow-y: auto;
+        }
+
+        .event {
+            padding: 5px 7px;
+            margin: 3px 0;
+            border-radius: 4px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 4px solid;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            line-height: 1.3;
+        }
+
+        .event:hover {
+            transform: translateX(3px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Couleurs JDS */
+        .event-jds {
+            background-color: #FF6B6B;
+            border-left-color: #E63946;
+        }
+
+        /* Couleurs JDR */
+        .event-jdr {
+            background-color: #4ECDC4;
+            border-left-color: #2A9D8F;
+        }
+
+        .weekend {
+            background-color: #fafafa;
+        }
+
+        .legend {
+            margin-top: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #fff5e6 0%, #ffe8cc 100%);
+            border-radius: 8px;
+            border: 2px solid #D2691E;
+        }
+
+        .legend h3 {
+            margin-bottom: 20px;
+            color: #8B4513;
+            font-size: 1.3em;
+        }
+
+        .legend-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 4px solid;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .legend-text {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .info-box {
+            margin-top: 25px;
+            padding: 20px;
+            background: #e3f2fd;
+            border-left: 5px solid #2196F3;
+            border-radius: 4px;
+        }
+
+        .info-box p {
+            color: #1565c0;
+            font-size: 1em;
+            margin-bottom: 8px;
+        }
+
+        .error-box {
+            margin: 20px;
+            padding: 20px;
+            background: #ffebee;
+            border-left: 5px solid #C62828;
+            border-radius: 4px;
+            color: #B71C1C;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            .calendar td {
+                height: 110px;
+                padding: 5px;
+                font-size: 0.9em;
+            }
+            .events-container {
+                font-size: 0.75em;
+            }
+            .legend-items {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎲 Au Dé 12</h1>
+            <div class="subtitle">Calendrier des Événements</div>
+            <p id="month-range"></p>
+            <p class="sync-status" id="sync-status">Chargement des données...</p>
+        </div>
+
+        <div class="controls">
+            <button class="btn active" onclick="filterCalendar('all')">📅 Les 2 calendriers</button>
+            <button class="btn" onclick="filterCalendar('jds')">🎯 Evènements JDS</button>
+            <button class="btn" onclick="filterCalendar('jdr')">⚔️ JDR</button>
+        </div>
+
+        <div class="calendar-wrapper">
+            <div id="calendar-container"></div>
+
+            <div class="legend">
+                <h3>🎨 Légende des couleurs</h3>
+                <div class="legend-items">
+                    <div class="legend-item" style="border-left-color: #E53935;">
+                        <div class="legend-color" style="background-color: #E53935;"></div>
+                        <div><div class="legend-text">V&M</div></div>
+                    </div>
+                    <div class="legend-item" style="border-left-color: #F06292;">
+                        <div class="legend-color" style="background-color: #F06292;"></div>
+                        <div><div class="legend-text">CHESSBAR</div></div>
+                    </div>
+                    <div class="legend-item" style="border-left-color: #FB8C00;">
+                        <div class="legend-color" style="background-color: #FB8C00;"></div>
+                        <div><div class="legend-text">OS & Initiation</div></div>
+                    </div>
+                    <div class="legend-item" style="border-left-color: #FDD835;">
+                        <div class="legend-color" style="background-color: #FDD835;"></div>
+                        <div><div class="legend-text">Tables Ouvertes</div></div>
+                    </div>
+                    <div class="legend-item" style="border-left-color: #43A047;">
+                        <div class="legend-color" style="background-color: #43A047;"></div>
+                        <div><div class="legend-text">Joueurs Anonymes</div></div>
+                    </div>
+                    <div class="legend-item" style="border-left-color: #00796B;">
+                        <div class="legend-color" style="background-color: #00796B;"></div>
+                        <div><div class="legend-text">Client</div></div>
+                    </div>
+                    <div class="legend-item" style="border-left-color: #1E88E5;">
+                        <div class="legend-color" style="background-color: #1E88E5;"></div>
+                        <div><div class="legend-text">Découverte</div></div>
+                    </div>
+                    <div class="legend-item" style="border-left-color: #3949AB;">
+                        <div class="legend-color" style="background-color: #3949AB;"></div>
+                        <div><div class="legend-text">Bleuet</div></div>
+                    </div>
+                    <div class="legend-item" style="border-left-color: #7E57C2;">
+                        <div class="legend-color" style="background-color: #7E57C2;"></div>
+                        <div><div class="legend-text">Créneau Libre</div></div>
+                    </div>
+                    <div class="legend-item" style="border-left-color: #512DA8;">
+                        <div class="legend-color" style="background-color: #512DA8;"></div>
+                        <div><div class="legend-text">BOTC</div></div>
+                    </div>
+                    <div class="legend-item" style="border-left-color: #455A64;">
+                        <div class="legend-color" style="background-color: #455A64;"></div>
+                        <div><div class="legend-text">Balthazar - Campagne Semi-Ouverte</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <p><strong>📌 Mise à jour automatique:</strong></p>
+                <p>Ce calendrier se met à jour automatiquement chaque fois que vous actualisez la page (F5). Les données proviennent directement de votre Google Agenda.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const monthNames = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+                           'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+        const dayNames = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+
+        let allEvents = { jds: [], jdr: [] };
+        let currentFilter = 'all';
+
+        // URL du Google Apps Script déployé
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwmKt1NXYsO4hVaCl2E4tC9nHjYZU20uSX3JliMWE0KI8z5IEatgbGwS8fpsGra5GXrjg/exec';
+
+        // Mappage des couleurs Google Calendar
+        const googleColorMap = {
+          '1': '#E53935',   // Tomate - Rouge
+          '2': '#F06292',   // Flamingo - Rose
+          '3': '#FB8C00',   // Tangerine - Orange
+          '4': '#FDD835',   // Banane - Jaune
+          '5': '#43A047',   // Sage - Vert clair
+          '6': '#00796B',   // Basilic - Vert
+          '7': '#1E88E5',   // Paon - Bleu
+          '8': '#3949AB',   // Bleuet - Bleu foncé
+          '9': '#7E57C2',   // Lavande - Violet
+          '10': '#512DA8',  // Raisin - Pourpre
+          '11': '#455A64'   // Graphite - Gris
+        };
+
+        function getEventColor(colorId) {
+          return googleColorMap[colorId] || '#D2691E'; // Couleur par défaut si pas de couleur
+        }
+
+        function adjustColorBrightness(color, percent) {
+          const num = parseInt(color.replace("#",""), 16);
+          const amt = Math.round(2.55 * percent);
+          const R = (num >> 16) + amt;
+          const G = (num >> 8 & 0x00FF) + amt;
+          const B = (num & 0x0000FF) + amt;
+          return "#" + (0x1000000 + (R<255?R<1?0:R:255)*0x10000 +
+            (G<255?G<1?0:G:255)*0x100 + (B<255?B<1?0:B:255))
+            .toString(16).slice(1);
+        }
+
+        async function loadEvents() {
+            const container = document.getElementById('calendar-container');
+            const syncStatus = document.getElementById('sync-status');
+
+            try {
+                syncStatus.textContent = 'Chargement des données...';
+                container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Récupération des événements...</p></div>';
+
+                const response = await fetch(API_URL);
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Transformer les événements en format utilisable
+                allEvents.jds = (data.jds || []).map(e => ({
+                    ...e,
+                    type: 'jds',
+                    date: e.startDate
+                }));
+
+                allEvents.jdr = (data.jdr || []).map(e => ({
+                    ...e,
+                    type: 'jdr',
+                    date: e.startDate
+                }));
+
+                syncStatus.textContent = `✅ Mise à jour: ${new Date(data.generated).toLocaleString('fr-FR')}`;
+                updateCalendarDisplay();
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                syncStatus.textContent = '❌ Erreur de chargement';
+                container.innerHTML = `<div class="error-box">
+                    <strong>Erreur de chargement des événements:</strong><br>
+                    ${error.message}<br><br>
+                    <small>Assurez-vous que l'URL de l'API Google Apps Script est correctement configurée dans le code HTML.</small>
+                </div>`;
+            }
+        }
+
+        function getMonthCalendar(year, month) {
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const days = lastDay.getDate();
+
+            let startDay = firstDay.getDay() - 1;
+            if (startDay === -1) startDay = 6;
+
+            return { days, startDay, year, month };
+        }
+
+        function getEventsForDate(dateStr) {
+            const events = currentFilter === 'all'
+                ? [...allEvents.jds, ...allEvents.jdr]
+                : currentFilter === 'jds' ? allEvents.jds : allEvents.jdr;
+
+            return events.filter(e => e.date === dateStr);
+        }
+
+        function formatEventDisplay(event) {
+            let display = event.title;
+            if (event.startDateTime && !event.isAllDay) {
+                const time = new Date(event.startDateTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                display += `<br><small>${time}</small>`;
+            }
+            return display;
+        }
+
+        function renderCalendar(month, year) {
+            const { days, startDay } = getMonthCalendar(year, month);
+            let html = `<div class="month-group">`;
+            html += `<h2 class="month-title">${monthNames[month]} ${year}</h2>`;
+            html += `<table class="calendar"><thead><tr>`;
+
+            dayNames.forEach(day => {
+                html += `<th class="weekday-header">${day}</th>`;
+            });
+            html += `</tr></thead><tbody>`;
+
+            let dayCounter = 1;
+            let done = false;
+
+            for (let week = 0; week < 6; week++) {
+                html += '<tr>';
+                for (let day = 0; day < 7; day++) {
+                    if ((week === 0 && day < startDay) || done) {
+                        html += '<td class="day-other-month"><div class="day-number"></div></td>';
+                    } else if (dayCounter > days) {
+                        html += '<td class="day-other-month"><div class="day-number"></div></td>';
+                        done = true;
+                    } else {
+                        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayCounter).padStart(2, '0')}`;
+                        const dayEvents = getEventsForDate(dateStr);
+                        const isWeekend = day === 5 || day === 6;
+
+                        html += `<td class="${isWeekend ? 'weekend' : ''}">`;
+                        html += `<div class="day-number">${dayCounter}</div>`;
+                        html += `<div class="events-container">`;
+
+                        dayEvents.forEach(event => {
+                            const bgColor = getEventColor(event.colorId);
+                            const borderColor = adjustColorBrightness(bgColor, -30);
+                            html += `<div class="event" style="background-color: ${bgColor}; border-left-color: ${borderColor};">${formatEventDisplay(event)}</div>`;
+                        });
+
+                        html += `</div></td>`;
+                        dayCounter++;
+                    }
+                }
+                html += '</tr>';
+                if (done) break;
+            }
+
+            html += `</tbody></table></div>`;
+            return html;
+        }
+
+        function updateCalendarDisplay() {
+            const today = new Date();
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
+            const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
+            const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+
+            const monthStr = `${monthNames[currentMonth]} ${currentYear}`;
+            const nextMonthStr = `${monthNames[nextMonth]} ${nextYear}`;
+            document.getElementById('month-range').textContent = `${monthStr} - ${nextMonthStr}`;
+
+            let html = renderCalendar(currentMonth, currentYear);
+            html += renderCalendar(nextMonth, nextYear);
+
+            document.getElementById('calendar-container').innerHTML = html;
+        }
+
+        function filterCalendar(type) {
+            currentFilter = type;
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            updateCalendarDisplay();
+        }
+
+        // Charger les événements au démarrage
+        loadEvents();
+
+        // Rafraîchir tous les 5 minutes
+        setInterval(loadEvents, 5 * 60 * 1000);
+    </script>
+</body>
+</html>
