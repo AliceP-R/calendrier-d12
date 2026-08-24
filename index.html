@@ -379,20 +379,122 @@
             color: #B71C1C;
         }
 
+        @media (max-width: 1024px) {
+            .month-frame {
+                flex-direction: column;
+            }
+
+            .month-frame-legend {
+                width: 100%;
+                border-left: none;
+                border-top: 2px solid #d75c1e;
+            }
+        }
+
         @media (max-width: 768px) {
+            .header {
+                padding: 20px 15px;
+            }
+
+            .header img {
+                height: 100px !important;
+                margin-bottom: 10px !important;
+            }
+
             .header h1 {
                 font-size: 1.8em;
             }
-            .calendar td {
-                height: 110px;
-                padding: 5px;
-                font-size: 0.9em;
+
+            .container {
+                margin: 0;
+                border-radius: 0;
             }
-            .events-container {
+
+            .calendar-wrapper {
+                padding: 15px 10px;
+            }
+
+            .month-frame {
+                padding: 15px;
+                margin-bottom: 20px;
+                border-radius: 6px;
+            }
+
+            .month-frame-calendar {
+                width: 100%;
+            }
+
+            .month-frame-legend {
+                width: 100%;
+                border-left: none;
+                border-top: 2px solid #d75c1e;
+                padding: 12px;
+            }
+
+            .month-frame-legend h4 {
+                font-size: 0.85em;
+            }
+
+            .mini-legend-text {
+                font-size: 0.75em !important;
+            }
+
+            .month-title {
+                font-size: 1.3em;
+                margin-bottom: 10px;
+            }
+
+            .calendar td {
+                height: 90px;
+                padding: 4px;
                 font-size: 0.75em;
             }
+
+            .day-number {
+                font-size: 1em;
+                margin-bottom: 4px;
+            }
+
+            .events-container {
+                font-size: 0.65em;
+                height: 70px;
+            }
+
+            .event {
+                padding: 3px 5px;
+                margin: 2px 0;
+                font-size: 0.75em;
+            }
+
+            .weekday-header {
+                padding: 8px;
+                font-size: 0.8em;
+            }
+
             .legend-items {
                 grid-template-columns: 1fr;
+            }
+
+            .controls {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .btn {
+                width: 100%;
+                padding: 10px 15px;
+                font-size: 0.9em;
+            }
+
+            .info-box {
+                margin: 15px 0;
+                padding: 15px;
+                font-size: 0.9em;
+            }
+
+            .info-box p {
+                font-size: 0.85em;
+                margin-bottom: 5px;
             }
         }
     </style>
