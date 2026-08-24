@@ -276,14 +276,23 @@
             margin-bottom: 30px;
             background: white;
             box-shadow: 0 4px 12px rgba(215, 92, 30, 0.2);
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .month-frame-calendar {
+            flex: 1;
+            min-width: 0;
         }
 
         .month-frame-legend {
-            background: #f9f9f9;
+            background: white;
             padding: 15px;
             border-radius: 6px;
-            border-bottom: 2px solid #d75c1e;
-            margin-bottom: 20px;
+            border-left: 2px solid #d75c1e;
+            flex-shrink: 0;
+            width: 300px;
         }
 
         .month-frame-legend h4 {
@@ -298,6 +307,18 @@
 
         .month-frame-legend .section:last-child {
             margin-bottom: 0;
+        }
+
+        @media (max-width: 1024px) {
+            .month-frame {
+                flex-direction: column;
+            }
+
+            .month-frame-legend {
+                width: 100%;
+                border-left: none;
+                border-top: 2px solid #d75c1e;
+            }
         }
 
         .mini-legend-item {
@@ -379,7 +400,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="./Logo-AuDe12-avec-ombre.png" style="height: 80px; margin-bottom: 20px;" alt="Au Dé 12">
+            <img src="./Logo-AuDe12-avec-ombre.png" style="height: 150px; margin-bottom: 5px;" alt="Au Dé 12">
             <h1>Au Dé 12</h1>
             <div class="subtitle">Calendrier des Événements</div>
             <p id="month-range"></p>
@@ -634,8 +655,8 @@
             return html;
         }
 
-        function renderFrameLegend() {
-            let html = '<div class="month-frame-legend">';
+        function renderFrameLegendContent() {
+            let html = '';
 
             if (currentFilter === 'all' || currentFilter === 'jds') {
                 html += '<div class="section"><h4>📅 JDS</h4>';
@@ -663,8 +684,11 @@
                 html += '</div>';
             }
 
-            html += '</div>';
             return html;
+        }
+
+        function renderFrameLegend() {
+            return '<div class="month-frame-legend">' + renderFrameLegendContent() + '</div>';
         }
 
         function updateCalendarDisplay() {
@@ -678,15 +702,23 @@
             const nextMonthStr = `${monthNames[nextMonth]} ${nextYear}`;
             document.getElementById('month-range').textContent = `${monthStr} - ${nextMonthStr}`;
 
-            // Wrap each month in a frame with legend at the top
+            // Wrap each month in a frame with legend on the side
             let html = '<div class="month-frame">' +
-                       renderFrameLegend() +
+                       '<div class="month-frame-calendar">' +
                        renderCalendar(currentMonth, currentYear) +
+                       '</div>' +
+                       '<div class="month-frame-legend">' +
+                       renderFrameLegendContent() +
+                       '</div>' +
                        '</div>';
 
             html += '<div class="month-frame">' +
-                    renderFrameLegend() +
+                    '<div class="month-frame-calendar">' +
                     renderCalendar(nextMonth, nextYear) +
+                    '</div>' +
+                    '<div class="month-frame-legend">' +
+                    renderFrameLegendContent() +
+                    '</div>' +
                     '</div>';
 
             document.getElementById('calendar-container').innerHTML = html;
