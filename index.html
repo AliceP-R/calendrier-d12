@@ -382,20 +382,20 @@
         let currentFilter = 'all';
 
         // URL du Google Apps Script déployé
-        const API_URL = 'https://script.google.com/macros/s/AKfycbwqBRxZ7d6BWG0w81va3fV4wiOPAEEpAVPO-IYzux-SfnbT6lUur0sejyizCoKbMgx6rg/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwmKt1NXYsO4hVaCl2E4tC9nHjYZU20uSX3JliMWE0KI8z5IEatgbGwS8fpsGra5GXrjg/exec';
 
-        // Mappage des couleurs Google Calendar
+        // Mappage des couleurs Google Calendar (CORRIGÉ)
         const googleColorMap = {
-          '1': '#E53935',   // Tomate - Rouge
-          '2': '#F06292',   // Flamingo - Rose
-          '3': '#FB8C00',   // Tangerine - Orange
-          '4': '#FDD835',   // Banane - Jaune
-          '5': '#43A047',   // Sage - Vert clair
-          '6': '#00796B',   // Basilic - Vert
-          '7': '#1E88E5',   // Paon - Bleu
+          '1': '#F06292',   // Flamingo - Rose
+          '2': '#7E57C2',   // Lavande - Violet
+          '3': '#512DA8',   // Raisin - Pourpre
+          '4': '#E53935',   // Tomate - Rouge ✓
+          '5': '#FDD835',   // Banane - Jaune ✓
+          '6': '#43A047',   // Sage - Vert clair
+          '7': '#1E88E5',   // Paon - Bleu ✓
           '8': '#3949AB',   // Bleuet - Bleu foncé
-          '9': '#7E57C2',   // Lavande - Violet
-          '10': '#512DA8',  // Raisin - Pourpre
+          '9': '#FB8C00',   // Tangerine - Orange
+          '10': '#00796B',  // Basilic - Vert foncé
           '11': '#455A64'   // Graphite - Gris
         };
 
@@ -414,7 +414,7 @@
             .toString(16).slice(1);
         }
 
-        async function loadEvents() {
+        function loadEvents() {
             const container = document.getElementById('calendar-container');
             const syncStatus = document.getElementById('sync-status');
 
@@ -422,28 +422,47 @@
                 syncStatus.textContent = 'Chargement des données...';
                 container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Récupération des événements...</p></div>';
 
-                const response = await fetch(API_URL);
-                const data = await response.json();
+                // JSONP for CORS
+                const callbackName = 'calendarCallback_' + Date.now();
+                window[callbackName] = function(data) {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
 
-                if (data.error) {
-                    throw new Error(data.error);
-                }
+                    // Transformer les événements en format utilisable
+                    allEvents.jds = (data.jds || []).map(e => ({
+                        ...e,
+                        type: 'jds',
+                        date: e.startDate
+                    }));
 
-                // Transformer les événements en format utilisable
-                allEvents.jds = (data.jds || []).map(e => ({
-                    ...e,
-                    type: 'jds',
-                    date: e.startDate
-                }));
+                    allEvents.jdr = (data.jdr || []).map(e => ({
+                        ...e,
+                        type: 'jdr',
+                        date: e.startDate
+                    }));
 
-                allEvents.jdr = (data.jdr || []).map(e => ({
-                    ...e,
-                    type: 'jdr',
-                    date: e.startDate
-                }));
+                    syncStatus.textContent = `✅ Mise à jour: ${new Date(data.generated).toLocaleString('fr-FR')}`;
+                    updateCalendarDisplay();
 
-                syncStatus.textContent = `✅ Mise à jour: ${new Date(data.generated).toLocaleString('fr-FR')}`;
-                updateCalendarDisplay();
+                    // Clean up
+                    delete window[callbackName];
+                };
+
+                // Create script tag for JSONP
+                const script = document.createElement('script');
+                script.src = API_URL + '?callback=' + callbackName;
+                script.onerror = function() {
+                    delete window[callbackName];
+                    console.error('Erreur de chargement');
+                    syncStatus.textContent = '❌ Erreur de chargement';
+                    container.innerHTML = `<div class="error-box">
+                        <strong>Erreur de chargement des événements:</strong><br>
+                        Impossible de se connecter à l'API Google Apps Script<br><br>
+                        <small>Assurez-vous que l'URL est correctement configurée.</small>
+                    </div>`;
+                };
+                document.head.appendChild(script);
 
             } catch (error) {
                 console.error('Erreur:', error);
