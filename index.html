@@ -382,25 +382,27 @@
         let currentFilter = 'all';
 
         // URL du Google Apps Script déployé
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzWB-bDQ-D2e-0ofGzu4X3UjpJPkEY_CCWN5ecGCNe_3um9sr5cAJSjMF2FQE8xfxPxSg/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwmKt1NXYsO4hVaCl2E4tC9nHjYZU20uSX3JliMWE0KI8z5IEatgbGwS8fpsGra5GXrjg/exec';
 
-        // Mappage des couleurs Google Calendar (CORRIGÉ)
-        const googleColorMap = {
-          '1': '#F06292',   // Flamingo - Rose
-          '2': '#7E57C2',   // Lavande - Violet
+        // Mappages des couleurs Google Calendar - DIFFÉRENTS PAR CALENDRIER!
+        const googleColorMapJDS = {
           '3': '#512DA8',   // Raisin - Pourpre
-          '4': '#E53935',   // Tomate - Rouge ✓
-          '5': '#FDD835',   // Banane - Jaune ✓
-          '6': '#43A047',   // Sage - Vert clair
-          '7': '#1E88E5',   // Paon - Bleu ✓
-          '8': '#3949AB',   // Bleuet - Bleu foncé
-          '9': '#FB8C00',   // Tangerine - Orange
-          '10': '#00796B',  // Basilic - Vert foncé
-          '11': '#455A64'   // Graphite - Gris
+          '5': '#FDD835',   // Banane - Jaune
+          '7': '#1E88E5',   // Paon - Bleu
         };
 
-        function getEventColor(colorId) {
-          return googleColorMap[colorId] || '#D2691E'; // Couleur par défaut si pas de couleur
+        const googleColorMapJDR = {
+          '2': '#7E57C2',   // Lavande - Violet
+          '3': '#512DA8',   // Raisin - Pourpre
+          '4': '#E53935',   // Tomate - Rouge
+          '5': '#FB8C00',   // Mandarine - Orange
+          '8': '#455A64',   // Graphite - Gris
+          '11': '#F06292'   // Flamant Rose - Rose
+        };
+
+        function getEventColor(colorId, calendarType) {
+          const map = calendarType === 'jds' ? googleColorMapJDS : googleColorMapJDR;
+          return map[colorId] || '#D2691E'; // Couleur par défaut si pas de couleur
         }
 
         function adjustColorBrightness(color, percent) {
@@ -535,7 +537,7 @@
                         html += `<div class="events-container">`;
 
                         dayEvents.forEach(event => {
-                            const bgColor = getEventColor(event.colorId);
+                            const bgColor = getEventColor(event.colorId, event.type);
                             const borderColor = adjustColorBrightness(bgColor, -30);
                             html += `<div class="event" style="background-color: ${bgColor}; border-left-color: ${borderColor};">${formatEventDisplay(event)}</div>`;
                         });
