@@ -256,6 +256,36 @@
             font-weight: 500;
         }
 
+        .mini-legend {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            border-left: 4px solid #D2691E;
+        }
+
+        .mini-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+
+        .mini-legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+
+        .mini-legend-text {
+            color: #555;
+            font-size: 0.9em;
+        }
+
         .info-box {
             margin-top: 25px;
             padding: 20px;
@@ -382,22 +412,37 @@
         let currentFilter = 'all';
 
         // URL du Google Apps Script déployé
-        const API_URL = 'https://script.google.com/macros/s/AKfycbxyK32FeDqtexO45XXGcvoM2cEhKGDi5GOorseKzOIkg6Zp53LE27cpDdGPBf60PpF99w/exec';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwmKt1NXYsO4hVaCl2E4tC9nHjYZU20uSX3JliMWE0KI8z5IEatgbGwS8fpsGra5GXrjg/exec';
 
         // Mappages des couleurs Google Calendar - DIFFÉRENTS PAR CALENDRIER!
         const googleColorMapJDS = {
-          '3': '#512DA8',   // Raisin - Pourpre
-          '5': '#FDD835',   // Banane - Jaune
-          '7': '#1E88E5',   // Paon - Bleu
+          '3': '#512DA8',   // Raisin - Pourpre = Soirée BOTC
+          '5': '#FDD835',   // Banane - Jaune = Tables Ouvertes
+          '7': '#1E88E5',   // Paon - Bleu = Soirée Découverte
+        };
+
+        const googleColorMapJDSLabels = {
+          '3': 'Soirée BOTC',
+          '5': 'Tables Ouvertes',
+          '7': 'Soirée Découverte'
         };
 
         const googleColorMapJDR = {
-          '2': '#7E57C2',   // Lavande - Violet
-          '3': '#55b080',   // Sauge - Vert
-          '4': '#E53935',   // Tomate - Rouge
-          '5': '#FB8C00',   // Mandarine - Orange
-          '8': '#455A64',   // Graphite - Gris
-          '11': '#F06292'   // Flamant Rose - Rose
+          '2': '#7E57C2',   // Lavande - Violet = Réservation Client
+          '3': '#55b080',   // Sauge - Vert = Créneau Libre
+          '4': '#E53935',   // Tomate - Rouge = MJ PRO - Vadrouilles & Magie
+          '5': '#FB8C00',   // Mandarine - Orange = OS & Initiation
+          '8': '#455A64',   // Graphite - Gris = MJ PRO - Campagne Semi-Ouverte
+          '11': '#F06292'   // Flamant Rose - Rose = Créneau prioritaire à la Ligue Ludique
+        };
+
+        const googleColorMapJDRLabels = {
+          '2': 'Réservation Client',
+          '3': 'Créneau Libre',
+          '4': 'MJ PRO - Vadrouilles & Magie',
+          '5': 'OS & Initiation',
+          '8': 'MJ PRO - Campagne Semi-Ouverte',
+          '11': 'Créneau prioritaire à la Ligue Ludique'
         };
 
         function getEventColor(colorId, calendarType) {
@@ -554,6 +599,39 @@
             return html;
         }
 
+        function renderMiniLegend() {
+            let html = '<div class="mini-legend">';
+
+            if (currentFilter === 'all' || currentFilter === 'jds') {
+                html += '<div><strong style="color: #8B4513; margin-right: 10px;">📅 JDS:</strong>';
+                Object.keys(googleColorMapJDS).forEach(colorId => {
+                    const color = googleColorMapJDS[colorId];
+                    const label = googleColorMapJDSLabels[colorId];
+                    html += `<div class="mini-legend-item">
+                        <div class="mini-legend-color" style="background-color: ${color};"></div>
+                        <div class="mini-legend-text">${label}</div>
+                    </div>`;
+                });
+                html += '</div>';
+            }
+
+            if (currentFilter === 'all' || currentFilter === 'jdr') {
+                html += '<div><strong style="color: #8B4513; margin-right: 10px;">⚔️ JDR:</strong>';
+                Object.keys(googleColorMapJDR).forEach(colorId => {
+                    const color = googleColorMapJDR[colorId];
+                    const label = googleColorMapJDRLabels[colorId];
+                    html += `<div class="mini-legend-item">
+                        <div class="mini-legend-color" style="background-color: ${color};"></div>
+                        <div class="mini-legend-text">${label}</div>
+                    </div>`;
+                });
+                html += '</div>';
+            }
+
+            html += '</div>';
+            return html;
+        }
+
         function updateCalendarDisplay() {
             const today = new Date();
             const currentMonth = today.getMonth();
@@ -565,7 +643,8 @@
             const nextMonthStr = `${monthNames[nextMonth]} ${nextYear}`;
             document.getElementById('month-range').textContent = `${monthStr} - ${nextMonthStr}`;
 
-            let html = renderCalendar(currentMonth, currentYear);
+            let html = renderMiniLegend();
+            html += renderCalendar(currentMonth, currentYear);
             html += renderCalendar(nextMonth, nextYear);
 
             document.getElementById('calendar-container').innerHTML = html;
