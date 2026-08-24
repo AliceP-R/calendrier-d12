@@ -128,11 +128,17 @@
             border-bottom: 3px solid #d75c1e;
         }
 
+        .calendar-table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin-bottom: 20px;
+        }
+
         .calendar {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
             background: white;
+            min-width: 600px;
         }
 
         .weekday-header {
@@ -411,64 +417,81 @@
             }
 
             .calendar-wrapper {
-                padding: 15px 10px;
+                padding: 10px 5px;
             }
 
             .month-frame {
-                padding: 15px;
+                padding: 12px;
                 margin-bottom: 20px;
                 border-radius: 6px;
+                gap: 10px;
             }
 
             .month-frame-calendar {
                 width: 100%;
+                min-width: 0;
             }
 
             .month-frame-legend {
                 width: 100%;
                 border-left: none;
                 border-top: 2px solid #d75c1e;
-                padding: 12px;
+                padding: 10px;
             }
 
             .month-frame-legend h4 {
-                font-size: 0.85em;
+                font-size: 0.8em;
+                margin-bottom: 8px;
+            }
+
+            .mini-legend-item {
+                margin-bottom: 4px !important;
             }
 
             .mini-legend-text {
-                font-size: 0.75em !important;
+                font-size: 0.7em !important;
             }
 
             .month-title {
-                font-size: 1.3em;
-                margin-bottom: 10px;
+                font-size: 1.1em;
+                margin-bottom: 8px;
+                padding-bottom: 5px;
+            }
+
+            .calendar {
+                min-width: 500px;
             }
 
             .calendar td {
-                height: 90px;
-                padding: 4px;
-                font-size: 0.75em;
+                height: 70px;
+                padding: 3px;
+                font-size: 0.65em;
+                border: 1px solid #ddd;
             }
 
             .day-number {
-                font-size: 1em;
-                margin-bottom: 4px;
+                font-size: 0.9em;
+                margin-bottom: 2px;
+                font-weight: bold;
             }
 
             .events-container {
-                font-size: 0.65em;
-                height: 70px;
+                font-size: 0.55em;
+                height: 50px;
+                overflow-y: auto;
             }
 
             .event {
-                padding: 3px 5px;
-                margin: 2px 0;
-                font-size: 0.75em;
+                padding: 2px 4px;
+                margin: 1px 0;
+                font-size: 0.65em;
+                border-radius: 2px;
             }
 
             .weekday-header {
-                padding: 8px;
-                font-size: 0.8em;
+                padding: 6px 4px;
+                font-size: 0.7em;
+                border: 1px solid #b3320b;
             }
 
             .legend-items {
@@ -478,23 +501,24 @@
             .controls {
                 flex-direction: column;
                 gap: 8px;
+                padding: 15px 10px;
             }
 
             .btn {
                 width: 100%;
-                padding: 10px 15px;
-                font-size: 0.9em;
+                padding: 10px 12px;
+                font-size: 0.85em;
             }
 
             .info-box {
-                margin: 15px 0;
-                padding: 15px;
-                font-size: 0.9em;
+                margin: 10px 0;
+                padding: 12px;
+                font-size: 0.85em;
             }
 
             .info-box p {
-                font-size: 0.85em;
-                margin-bottom: 5px;
+                font-size: 0.8em;
+                margin-bottom: 4px;
             }
         }
     </style>
@@ -679,7 +703,7 @@
             const { days, startDay } = getMonthCalendar(year, month);
             let html = `<div class="month-group">`;
             html += `<h2 class="month-title">${monthNames[month]} ${year}</h2>`;
-            html += `<table class="calendar"><thead><tr>`;
+            html += `<div class="calendar-table-wrapper"><table class="calendar"><thead><tr>`;
 
             dayNames.forEach(day => {
                 html += `<th class="weekday-header">${day}</th>`;
@@ -720,7 +744,7 @@
                 if (done) break;
             }
 
-            html += `</tbody></table></div>`;
+            html += `</tbody></table></div></div>`;
             return html;
         }
 
