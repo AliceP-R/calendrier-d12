@@ -269,6 +269,37 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
+        .month-frame {
+            border: 2px solid #d75c1e;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            background: white;
+            box-shadow: 0 4px 12px rgba(215, 92, 30, 0.2);
+        }
+
+        .month-frame-legend {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            border-bottom: 2px solid #d75c1e;
+            margin-bottom: 20px;
+        }
+
+        .month-frame-legend h4 {
+            color: #8B4513;
+            margin: 0 0 12px 0;
+            font-size: 0.95em;
+        }
+
+        .month-frame-legend .section {
+            margin-bottom: 15px;
+        }
+
+        .month-frame-legend .section:last-child {
+            margin-bottom: 0;
+        }
+
         .mini-legend-item {
             display: flex;
             align-items: center;
@@ -348,7 +379,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1><img src="./Logo-AuDe12-avec-ombre.png" style="height: 1.2em; vertical-align: middle; margin-right: 0.3em;" alt="Au Dé 12"> Au Dé 12</h1>
+            <img src="./Logo-AuDe12-avec-ombre.png" style="height: 80px; margin-bottom: 20px;" alt="Au Dé 12">
+            <h1>Au Dé 12</h1>
             <div class="subtitle">Calendrier des Événements</div>
             <p id="month-range"></p>
             <p class="sync-status" id="sync-status">Chargement des données...</p>
@@ -362,12 +394,9 @@
         </div>
 
         <div class="calendar-wrapper">
-            <div style="display: flex; gap: 20px; align-items: flex-start;">
-                <div id="calendar-container" style="flex: 1; min-width: 0;"></div>
-                <div id="legend-sidebar" style="flex-shrink: 0; width: 280px; position: sticky; top: 20px;"></div>
-            </div>
-
-            <div id="legend-bottom" style="margin-top: 40px;"></div>
+            <div id="calendar-container" style="width: 100%;"></div>
+            <div id="legend-sidebar" style="display: none;"></div>
+            <div id="legend-bottom" style="display: none;"></div>
 
             <div class="info-box">
                 <p><strong>📌 Mise à jour automatique:</strong></p>
@@ -605,6 +634,39 @@
             return html;
         }
 
+        function renderFrameLegend() {
+            let html = '<div class="month-frame-legend">';
+
+            if (currentFilter === 'all' || currentFilter === 'jds') {
+                html += '<div class="section"><h4>📅 JDS</h4>';
+                Object.keys(googleColorMapJDS).forEach(colorId => {
+                    const color = googleColorMapJDS[colorId];
+                    const label = googleColorMapJDSLabels[colorId];
+                    html += `<div class="mini-legend-item" style="margin-bottom: 6px;">
+                        <div class="mini-legend-color" style="background-color: ${color};"></div>
+                        <div class="mini-legend-text" style="font-size: 0.85em;">${label}</div>
+                    </div>`;
+                });
+                html += '</div>';
+            }
+
+            if (currentFilter === 'all' || currentFilter === 'jdr') {
+                html += '<div class="section"><h4>⚔️ JDR</h4>';
+                Object.keys(googleColorMapJDR).forEach(colorId => {
+                    const color = googleColorMapJDR[colorId];
+                    const label = googleColorMapJDRLabels[colorId];
+                    html += `<div class="mini-legend-item" style="margin-bottom: 6px;">
+                        <div class="mini-legend-color" style="background-color: ${color};"></div>
+                        <div class="mini-legend-text" style="font-size: 0.85em;">${label}</div>
+                    </div>`;
+                });
+                html += '</div>';
+            }
+
+            html += '</div>';
+            return html;
+        }
+
         function updateCalendarDisplay() {
             const today = new Date();
             const currentMonth = today.getMonth();
@@ -616,12 +678,20 @@
             const nextMonthStr = `${monthNames[nextMonth]} ${nextYear}`;
             document.getElementById('month-range').textContent = `${monthStr} - ${nextMonthStr}`;
 
-            let html = renderCalendar(currentMonth, currentYear);
-            html += renderCalendar(nextMonth, nextYear);
+            // Wrap each month in a frame with legend at the top
+            let html = '<div class="month-frame">' +
+                       renderFrameLegend() +
+                       renderCalendar(currentMonth, currentYear) +
+                       '</div>';
+
+            html += '<div class="month-frame">' +
+                    renderFrameLegend() +
+                    renderCalendar(nextMonth, nextYear) +
+                    '</div>';
 
             document.getElementById('calendar-container').innerHTML = html;
-            document.getElementById('legend-sidebar').innerHTML = renderMiniLegend();
-            document.getElementById('legend-bottom').innerHTML = renderMiniLegend();
+            document.getElementById('legend-sidebar').innerHTML = '';
+            document.getElementById('legend-bottom').innerHTML = '';
         }
 
         function filterCalendar(type) {
