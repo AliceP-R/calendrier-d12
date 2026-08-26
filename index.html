@@ -138,7 +138,48 @@
             width: 100%;
             border-collapse: collapse;
             background: white;
-            min-width: 600px;
+            table-layout: fixed;
+        }
+
+        /* Largeurs des colonnes - mardi est fermé donc plus fin */
+        .calendar th:nth-child(2),
+        .calendar td:nth-child(2) {
+            width: 6%;
+        }
+
+        .calendar th:not(:nth-child(2)),
+        .calendar td:not(:nth-child(2)) {
+            width: calc(94% / 6);
+        }
+
+        /* Mardi fermé - hachures */
+        .calendar th:nth-child(2) {
+            background: repeating-linear-gradient(
+                45deg,
+                #f0f0f0,
+                #f0f0f0 10px,
+                #e0e0e0 10px,
+                #e0e0e0 20px
+            );
+            color: #999;
+            font-weight: bold;
+        }
+
+        .calendar td:nth-child(2) {
+            background: repeating-linear-gradient(
+                45deg,
+                #f9f9f9,
+                #f9f9f9 10px,
+                #efefef 10px,
+                #efefef 20px
+            );
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        .calendar td:nth-child(2) .day-number,
+        .calendar td:nth-child(2) .events-container {
+            display: none;
         }
 
         .weekday-header {
@@ -283,12 +324,12 @@
             background: white;
             box-shadow: 0 4px 12px rgba(215, 92, 30, 0.2);
             display: flex;
-            gap: 20px;
-            align-items: flex-start;
+            flex-direction: column;
+            gap: 15px;
         }
 
         .month-frame-calendar {
-            flex: 1;
+            width: 100%;
             min-width: 0;
         }
 
@@ -296,9 +337,9 @@
             background: white;
             padding: 15px;
             border-radius: 6px;
-            border-left: 2px solid #d75c1e;
-            flex-shrink: 0;
-            width: 300px;
+            border-top: 2px solid #d75c1e;
+            width: 100%;
+            order: -1;
         }
 
         .month-frame-legend h4 {
@@ -324,6 +365,10 @@
                 width: 100%;
                 border-left: none;
                 border-top: 2px solid #d75c1e;
+            }
+
+            .calendar {
+                table-layout: fixed;
             }
         }
 
@@ -394,6 +439,10 @@
                 width: 100%;
                 border-left: none;
                 border-top: 2px solid #d75c1e;
+            }
+
+            .calendar {
+                table-layout: fixed;
             }
         }
 
@@ -828,28 +877,77 @@
             const nextMonthStr = `${monthNames[nextMonth]} ${nextYear}`;
             document.getElementById('month-range').textContent = `${monthStr} - ${nextMonthStr}`;
 
-            // Wrap each month in a frame with legend on the side
+            // Wrap each month in a frame with legend BETWEEN title and calendar
             let html = '<div class="month-frame">' +
-                       '<div class="month-frame-calendar">' +
-                       renderCalendar(currentMonth, currentYear) +
-                       '</div>' +
+                       '<h2 class="month-title">' + monthNames[currentMonth] + ' ' + currentYear + '</h2>' +
                        '<div class="month-frame-legend">' +
                        renderFrameLegendContent() +
+                       '</div>' +
+                       '<div class="month-frame-calendar">' +
+                       renderCalendarOnly(currentMonth, currentYear) +
                        '</div>' +
                        '</div>';
 
             html += '<div class="month-frame">' +
-                    '<div class="month-frame-calendar">' +
-                    renderCalendar(nextMonth, nextYear) +
-                    '</div>' +
+                    '<h2 class="month-title">' + monthNames[nextMonth] + ' ' + nextYear + '</h2>' +
                     '<div class="month-frame-legend">' +
                     renderFrameLegendContent() +
+                    '</div>' +
+                    '<div class="month-frame-calendar">' +
+                    renderCalendarOnly(nextMonth, nextYear) +
                     '</div>' +
                     '</div>';
 
             document.getElementById('calendar-container').innerHTML = html;
             document.getElementById('legend-sidebar').innerHTML = '';
             document.getElementById('legend-bottom').innerHTML = '';
+        }
+
+        function renderCalendarOnly(month, year) {
+            const { days, startDay } = getMonthCalendar(year, month);
+            let html = `<div class="calendar-table-wrapper"><table class="calendar"><thead><tr>`;
+
+            dayNames.forEach(day => {
+                html += `<th class="weekday-header">${day}</th>`;
+            });
+            html += `</tr></thead><tbody>`;
+
+            let dayCounter = 1;
+            let done = false;
+
+            for (let week = 0; week < 6; week++) {
+                html += '<tr>';
+                for (let day = 0; day < 7; day++) {
+                    if ((week === 0 && day < startDay) || done) {
+                        html += '<td class="day-other-month"><div class="day-number"></div></td>';
+                    } else if (dayCounter > days) {
+                        html += '<td class="day-other-month"><div class="day-number"></div></td>';
+                        done = true;
+                    } else {
+                        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayCounter).padStart(2, '0')}`;
+                        const dayEvents = getEventsForDate(dateStr);
+                        const isWeekend = day === 5 || day === 6;
+
+                        html += `<td class="${isWeekend ? 'weekend' : ''}">`;
+                        html += `<div class="day-number">${dayCounter}</div>`;
+                        html += `<div class="events-container">`;
+
+                        dayEvents.forEach(event => {
+                            const bgColor = getEventColor(event.colorId, event.type);
+                            const borderColor = adjustColorBrightness(bgColor, -30);
+                            html += `<div class="event" style="background-color: ${bgColor}; border-left-color: ${borderColor};">${formatEventDisplay(event)}</div>`;
+                        });
+
+                        html += `</div></td>`;
+                        dayCounter++;
+                    }
+                }
+                html += '</tr>';
+                if (done) break;
+            }
+
+            html += `</tbody></table></div>`;
+            return html;
         }
 
         function filterCalendar(type) {
