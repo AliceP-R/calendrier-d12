@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Au Dé 12 - Calendrier Dynamique</title>
+    <script src="./config.js"></script>
     <style>
         * {
             margin: 0;
@@ -607,7 +608,7 @@
 
             <div class="info-box">
                 <p><strong>📌 Mise à jour automatique:</strong></p>
-                <p>Ce calendrier se met à jour automatiquement chaque fois que vous actualisez la page (F5).</p>
+                <p>Ce calendrier se met à jour automatiquement chaque fois que vous actualisez la page (F5). Les données proviennent directement de votre Google Agenda.</p>
             </div>
         </div>
     </div>
@@ -620,8 +621,8 @@
         let allEvents = { jds: [], jdr: [] };
         let currentFilter = 'all';
 
-        // URL du Google Apps Script déployé
-        const API_URL = 'https://script.google.com/macros/s/AKfycbxTifn-zoUbBWEMw6pEIc3xlHBFJS1QBUGGOAOW0SDzhf4cu2k57PiycaXvuaWKmQH61g/exec';
+        // URL du Google Apps Script déployé (depuis config.js)
+        const API_URL = API_CONFIG.apiUrl;
 
         // Mappages des couleurs Google Calendar - DIFFÉRENTS PAR CALENDRIER!
         const googleColorMapJDS = {
@@ -973,8 +974,8 @@
         // Charger les événements au démarrage
         loadEvents();
 
-        // Rafraîchir tous les 5 minutes
-        setInterval(loadEvents, 5 * 60 * 1000);
+        // Rafraîchir automatiquement selon la config
+        setInterval(loadEvents, API_CONFIG.refreshInterval);
     </script>
 </body>
 </html>
