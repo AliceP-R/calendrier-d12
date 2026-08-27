@@ -340,6 +340,9 @@
             border-top: 2px solid #d75c1e;
             width: 100%;
             order: -1;
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
         }
 
         .month-frame-legend h4 {
@@ -349,7 +352,9 @@
         }
 
         .month-frame-legend .section {
-            margin-bottom: 15px;
+            flex: 1;
+            min-width: 200px;
+            margin-bottom: 0;
         }
 
         .month-frame-legend .section:last-child {
@@ -486,6 +491,12 @@
                 border-left: none;
                 border-top: 2px solid #d75c1e;
                 padding: 10px;
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .month-frame-legend .section {
+                min-width: 100%;
             }
 
             .month-frame-legend h4 {
@@ -596,7 +607,7 @@
 
             <div class="info-box">
                 <p><strong>📌 Mise à jour automatique:</strong></p>
-                <p>Ce calendrier se met à jour automatiquement chaque fois que vous actualisez la page (F5). Les données proviennent directement de votre Google Agenda.</p>
+                <p>Ce calendrier se met à jour automatiquement chaque fois que vous actualisez la page (F5).</p>
             </div>
         </div>
     </div>
