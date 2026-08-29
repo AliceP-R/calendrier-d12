@@ -6,7 +6,7 @@
  
 const API_CONFIG = {
     // URL du Google Apps Script déployé
-    apiUrl: 'https://script.google.com/macros/s/AKfycbxDDeVpKsdD5lTOMmumVKjQf8C6oqQ8Mc0PL0M1lq4W9FdFjEk2Zzw1dKKzuSoX7olSig/exec',
+    apiUrl: 'https://script.google.com/macros/s/AKfycbxTifn-zoUbBWEMw6pEIc3xlHBFJS1QBUGGOAOW0SDzhf4cu2k57PiycaXvuaWKmQH61g/exec',
  
     // Autres paramètres utiles
     refreshInterval: 5 * 60 * 1000, // 5 minutes
