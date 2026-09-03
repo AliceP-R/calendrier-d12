@@ -32,20 +32,22 @@
             background: linear-gradient(135deg, #352419 0%, #4a3529 100%);
             color: white;
             padding: 12px 20px;
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr auto;
             align-items: center;
             gap: 20px;
-            justify-content: space-between;
         }
 
         .header img {
             height: 60px;
-            flex-shrink: 0;
+            justify-self: end;
+            grid-column: 1;
         }
 
         .header-center {
-            flex: 1;
             text-align: center;
+            grid-column: 2;
+            white-space: nowrap;
         }
 
         .header h1 {
@@ -62,7 +64,7 @@
 
         .header-right {
             text-align: right;
-            flex-shrink: 0;
+            grid-column: 4;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -511,16 +513,23 @@
         @media (max-width: 768px) {
             .header {
                 padding: 12px 15px;
-                flex-direction: column;
-                gap: 12px;
+                grid-template-columns: 1fr;
+                gap: 8px;
             }
 
             .header img {
-                height: 70px;
+                height: 50px;
+                justify-self: center;
+                grid-column: 1;
+            }
+
+            .header-center {
+                grid-column: 1;
             }
 
             .header-right {
                 text-align: center;
+                grid-column: 1;
             }
 
             .header h1 {
@@ -830,7 +839,12 @@ function loadEvents() {
             // Filter by selected colors if any are selected
             const selectedColors = Object.keys(selectedColorFilters).filter(key => selectedColorFilters[key]);
             if (selectedColors.length > 0) {
-                events = events.filter(e => selectedColors.includes(e.colorId));
+                events = events.filter(e => {
+                    const colorId = String(e.colorId);
+                    const calendarColorMap = e.type === 'jds' ? googleColorMapJDS : googleColorMapJDR;
+                    // Only include if this colorId exists in the appropriate calendar's color map AND is selected
+                    return calendarColorMap[colorId] && selectedColors.includes(colorId);
+                });
             }
 
             return events;
