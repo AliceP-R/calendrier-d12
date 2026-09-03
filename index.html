@@ -31,32 +31,54 @@
         .header {
             background: linear-gradient(135deg, #352419 0%, #4a3529 100%);
             color: white;
-            padding: 40px 20px;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            justify-content: space-between;
+        }
+
+        .header img {
+            height: 60px;
+            flex-shrink: 0;
+        }
+
+        .header-center {
+            flex: 1;
             text-align: center;
         }
 
         .header h1 {
-            font-size: 2.8em;
-            margin-bottom: 10px;
+            font-size: 1.8em;
+            margin: 0;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         .header .subtitle {
-            font-size: 1.3em;
+            font-size: 0.9em;
             opacity: 0.95;
-            margin-bottom: 5px;
+            margin: 2px 0 0 0;
+        }
+
+        .header-right {
+            text-align: right;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .header p {
-            font-size: 1em;
+            font-size: 0.85em;
             opacity: 0.9;
-            margin-top: 10px;
+            margin: 0;
+            line-height: 1.3;
         }
 
         .sync-status {
-            font-size: 0.9em;
+            font-size: 0.8em;
             opacity: 0.8;
-            margin-top: 5px;
+            margin-top: 2px;
         }
 
         .controls {
@@ -488,16 +510,25 @@
 
         @media (max-width: 768px) {
             .header {
-                padding: 20px 15px;
+                padding: 12px 15px;
+                flex-direction: column;
+                gap: 12px;
             }
 
             .header img {
-                height: 100px !important;
-                margin-bottom: 10px !important;
+                height: 70px;
+            }
+
+            .header-right {
+                text-align: center;
             }
 
             .header h1 {
-                font-size: 1.8em;
+                font-size: 1.4em;
+            }
+
+            .header .subtitle {
+                font-size: 0.8em;
             }
 
             .container {
@@ -621,11 +652,15 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="./Logo-AuDe12-avec-ombre.png" style="height: 150px; margin-bottom: 5px;" alt="Au Dé 12">
-            <h1>Au Dé 12</h1>
-            <div class="subtitle">Calendrier des Événements</div>
-            <p id="month-range"></p>
-            <p class="sync-status" id="sync-status">Chargement des données...</p>
+            <img src="./Logo-AuDe12-avec-ombre.png" alt="Au Dé 12">
+            <div class="header-center">
+                <h1>Au Dé 12</h1>
+                <div class="subtitle">Calendrier des Événements</div>
+            </div>
+            <div class="header-right">
+                <p id="month-range"></p>
+                <p class="sync-status" id="sync-status">Chargement des données...</p>
+            </div>
         </div>
 
         <div class="controls">
