@@ -95,32 +95,27 @@
         .color-filter-checkbox {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px 14px;
-            background: white;
-            border: 2px solid #ddd;
-            border-radius: 6px;
+            gap: 8px;
+            padding: 4px 0;
+            background: transparent;
+            border: none;
+            border-radius: 0;
             cursor: pointer;
-            font-size: 0.9em;
-            transition: all 0.3s;
-            margin-bottom: 8px;
+            font-size: 0.85em;
+            transition: all 0.2s;
         }
 
         .color-filter-checkbox:hover {
-            background: #f9f9f9;
-            border-color: #d75c1e;
-            box-shadow: 0 2px 6px rgba(215, 92, 30, 0.1);
+            background: rgba(215, 92, 30, 0.05);
+            border-radius: 4px;
+            padding: 4px 8px;
         }
 
         .color-filter-checkbox input[type="checkbox"] {
             cursor: pointer;
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             accent-color: #415921;
-        }
-
-        .color-filter-checkbox input[type="checkbox"]:checked {
-            background-color: #415921;
         }
 
         .color-filter-box {
@@ -610,15 +605,6 @@
                 font-size: 0.85em;
             }
 
-            #color-filters {
-                flex-direction: column !important;
-                gap: 15px !important;
-            }
-
-            .color-filter-checkbox {
-                margin-bottom: 6px;
-            }
-
             .info-box {
                 margin: 10px 0;
                 padding: 12px;
@@ -643,15 +629,10 @@
         </div>
 
         <div class="controls">
-            <button class="btn active" onclick="filterCalendar('all')">📅 Les 2 calendriers</button>
-            <button class="btn" onclick="filterCalendar('jds')">🎯 Evènements JDS</button>
-            <button class="btn" onclick="filterCalendar('jdr')">⚔️ JDR</button>
-            <button class="btn" onclick="toggleColorFilters()" style="margin-left: auto;">🎨 Filtrer par type</button>
-            <button class="btn" onclick="loadEvents()">🔄 Mettre à jour</button>
-        </div>
-
-        <div id="color-filters" style="display: none; padding: 20px; background: #ead7bc; border-bottom: 2px solid #d4c2a8; flex-wrap: wrap; gap: 40px; flex-direction: row; justify-content: flex-start;">
-            <!-- Sera rempli dynamiquement par JavaScript -->
+            <button class="btn active" onclick="filterCalendar('all')">📅 Tous les évènements</button>
+            <button class="btn" onclick="filterCalendar('jds')">🎯 Jeux de société</button>
+            <button class="btn" onclick="filterCalendar('jdr')">⚔️ Jeux de rôle</button>
+            <button class="btn" onclick="loadEvents()" style="margin-left: auto;">🔄 Mettre à jour</button>
         </div>
 
         <div class="calendar-wrapper">
@@ -725,64 +706,13 @@
             .toString(16).slice(1);
         }
 
-        function toggleColorFilters() {
-            const filterPanel = document.getElementById('color-filters');
-            if (filterPanel.style.display === 'none') {
-                filterPanel.style.display = 'flex';
-                renderColorFilters();
-            } else {
-                filterPanel.style.display = 'none';
-            }
-        }
-
-        function renderColorFilters() {
-            const filterPanel = document.getElementById('color-filters');
-            let html = '';
-
-            // JDS Colors
-            if (currentFilter === 'all' || currentFilter === 'jds') {
-                html += '<div style="flex: 1; min-width: 200px;"><strong style="color: #8B4513; display: block; margin-bottom: 12px;">📅 JDS</strong>';
-                Object.keys(googleColorMapJDS).forEach(colorId => {
-                    const color = googleColorMapJDS[colorId];
-                    const label = googleColorMapJDSLabels[colorId];
-                    const isChecked = selectedColorFilters[colorId] || false;
-                    html += `
-                        <label class="color-filter-checkbox">
-                            <input type="checkbox" value="${colorId}" ${isChecked ? 'checked' : ''} onchange="updateColorFilter(this)">
-                            <div class="color-filter-box" style="background-color: ${color};"></div>
-                            <span>${label}</span>
-                        </label>`;
-                });
-                html += '</div>';
-            }
-
-            // JDR Colors
-            if (currentFilter === 'all' || currentFilter === 'jdr') {
-                html += '<div style="flex: 1; min-width: 200px;"><strong style="color: #8B4513; display: block; margin-bottom: 12px;">⚔️ JDR</strong>';
-                Object.keys(googleColorMapJDR).forEach(colorId => {
-                    const color = googleColorMapJDR[colorId];
-                    const label = googleColorMapJDRLabels[colorId];
-                    const isChecked = selectedColorFilters[colorId] || false;
-                    html += `
-                        <label class="color-filter-checkbox">
-                            <input type="checkbox" value="${colorId}" ${isChecked ? 'checked' : ''} onchange="updateColorFilter(this)">
-                            <div class="color-filter-box" style="background-color: ${color};"></div>
-                            <span>${label}</span>
-                        </label>`;
-                });
-                html += '</div>';
-            }
-
-            filterPanel.innerHTML = html;
-        }
-
         function updateColorFilter(checkbox) {
             const colorId = checkbox.value;
             selectedColorFilters[colorId] = checkbox.checked;
             updateCalendarDisplay();
         }
 
-        function loadEvents() {
+function loadEvents() {
             const container = document.getElementById('calendar-container');
             const syncStatus = document.getElementById('sync-status');
 
@@ -970,10 +900,12 @@
                 Object.keys(googleColorMapJDS).forEach(colorId => {
                     const color = googleColorMapJDS[colorId];
                     const label = googleColorMapJDSLabels[colorId];
-                    html += `<div class="mini-legend-item" style="margin-bottom: 6px;">
-                        <div class="mini-legend-color" style="background-color: ${color};"></div>
+                    const isChecked = selectedColorFilters[colorId] || false;
+                    html += `<label class="color-filter-checkbox" style="margin-bottom: 6px;">
+                        <input type="checkbox" value="${colorId}" ${isChecked ? 'checked' : ''} onchange="updateColorFilter(this)">
+                        <div class="mini-legend-color" style="background-color: ${color}; width: 16px; height: 16px;"></div>
                         <div class="mini-legend-text" style="font-size: 0.85em;">${label}</div>
-                    </div>`;
+                    </label>`;
                 });
                 html += '</div>';
             }
@@ -983,10 +915,12 @@
                 Object.keys(googleColorMapJDR).forEach(colorId => {
                     const color = googleColorMapJDR[colorId];
                     const label = googleColorMapJDRLabels[colorId];
-                    html += `<div class="mini-legend-item" style="margin-bottom: 6px;">
-                        <div class="mini-legend-color" style="background-color: ${color};"></div>
+                    const isChecked = selectedColorFilters[colorId] || false;
+                    html += `<label class="color-filter-checkbox" style="margin-bottom: 6px;">
+                        <input type="checkbox" value="${colorId}" ${isChecked ? 'checked' : ''} onchange="updateColorFilter(this)">
+                        <div class="mini-legend-color" style="background-color: ${color}; width: 16px; height: 16px;"></div>
                         <div class="mini-legend-text" style="font-size: 0.85em;">${label}</div>
-                    </div>`;
+                    </label>`;
                 });
                 html += '</div>';
             }
