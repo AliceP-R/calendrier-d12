@@ -660,6 +660,137 @@
                 margin-bottom: 4px;
             }
         }
+
+        /* Admin Button & Modal Styles */
+        .admin-btn {
+            position: absolute;
+            right: 20px;
+            padding: 8px 16px;
+            background: #d75c1e;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 0.9em;
+        }
+
+        .admin-btn:hover {
+            background: #b3470f;
+            transform: translateY(-2px);
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #352419 0%, #4a3529 100%);
+            color: white;
+            padding: 20px;
+            border-bottom: 3px solid #d75c1e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5em;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.8em;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .event-details {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #d75c1e;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #352419;
+            font-size: 0.95em;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 0.95em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #d75c1e;
+        }
+
+        .form-group.required label::after {
+            content: " *";
+            color: #e53935;
+        }
+
+        .modal-btn {
+            width: 100%;
+            padding: 12px 20px;
+            background: #d75c1e;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .modal-btn:hover {
+            background: #b3470f;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -674,6 +805,7 @@
                 <p id="month-range"></p>
                 <p class="sync-status" id="sync-status">Chargement des données...</p>
             </div>
+            <button class="admin-btn" onclick="goToAdmin()">🔐 Admin</button>
         </div>
 
         <div class="controls">
@@ -896,7 +1028,9 @@ function loadEvents() {
                         dayEvents.forEach(event => {
                             const bgColor = getEventColor(event.colorId, event.type);
                             const borderColor = adjustColorBrightness(bgColor, -30);
-                            html += `<div class="event" style="background-color: ${bgColor}; border-left-color: ${borderColor};">${formatEventDisplay(event)}</div>`;
+                            const eventDate = event.date ? event.date.split('-').slice(2).join('/') + '/' + event.date.split('-')[1] : '';
+                            const eventTime = event.startDateTime ? new Date(event.startDateTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+                            html += `<div class="event" style="background-color: ${bgColor}; border-left-color: ${borderColor}; cursor: pointer;" onclick="openInscriptionModal('${event.title.replace(/'/g, "\\'")}', '${eventDate}', '${eventTime}')">${formatEventDisplay(event)}</div>`;
                         });
 
                         html += `</div></td>`;
@@ -1055,7 +1189,9 @@ function loadEvents() {
                         dayEvents.forEach(event => {
                             const bgColor = getEventColor(event.colorId, event.type);
                             const borderColor = adjustColorBrightness(bgColor, -30);
-                            html += `<div class="event" style="background-color: ${bgColor}; border-left-color: ${borderColor};">${formatEventDisplay(event)}</div>`;
+                            const eventDate = event.date ? event.date.split('-').slice(2).join('/') + '/' + event.date.split('-')[1] : '';
+                            const eventTime = event.startDateTime ? new Date(event.startDateTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
+                            html += `<div class="event" style="background-color: ${bgColor}; border-left-color: ${borderColor}; cursor: pointer;" onclick="openInscriptionModal('${event.title.replace(/'/g, "\\'")}', '${eventDate}', '${eventTime}')">${formatEventDisplay(event)}</div>`;
                         });
 
                         html += `</div></td>`;
@@ -1084,6 +1220,141 @@ function loadEvents() {
 
         // Rafraîchir automatiquement selon la config
         setInterval(loadEvents, API_CONFIG.refreshInterval);
+
+        // ===== FUNCTIONS FOR INSCRIPTION MODAL =====
+        function goToAdmin() {
+            window.location.href = 'admin.html';
+        }
+
+        function openInscriptionModal(eventTitle, eventDate, eventTime) {
+            document.getElementById('modalEventTitle').textContent = eventTitle;
+            document.getElementById('modalEventDate').textContent = '📅 ' + eventDate;
+            document.getElementById('modalEventTime').textContent = '🕒 ' + eventTime;
+            document.getElementById('inscriptionModal').style.display = 'flex';
+            document.getElementById('inscriptionForm').style.display = 'block';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function closeInscriptionModal() {
+            document.getElementById('inscriptionModal').style.display = 'none';
+            document.getElementById('inscriptionForm').reset();
+        }
+
+        function togglePseudoField(platform) {
+            const discord = document.getElementById('discord').checked;
+            const instagram = document.getElementById('instagram').checked;
+
+            document.getElementById('discordPseudo').style.display = discord ? 'block' : 'none';
+            document.getElementById('instagramPseudo').style.display = instagram ? 'block' : 'none';
+        }
+
+        function submitInscription(event) {
+            event.preventDefault();
+
+            const formData = new FormData(document.getElementById('inscriptionForm'));
+            const data = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                contact: formData.get('contact'),
+                discordPseudo: formData.get('discordPseudo'),
+                instagramPseudo: formData.get('instagramPseudo'),
+                persons: formData.get('persons'),
+                message: formData.get('message'),
+                eventTitle: document.getElementById('modalEventTitle').textContent
+            };
+
+            fetch(API_CONFIG.apiUrl, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'submitInscription',
+                    data: data
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    document.getElementById('inscriptionForm').style.display = 'none';
+                    document.getElementById('successMessage').style.display = 'block';
+                    setTimeout(() => closeInscriptionModal(), 3000);
+                } else {
+                    alert('Erreur: ' + (result.message || 'Impossible de soumettre l\'inscription'));
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Erreur de connexion');
+            });
+        }
     </script>
+
+    <!-- INSCRIPTION MODAL -->
+    <div id="inscriptionModal" class="modal-overlay" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalEventTitle">Événement</h2>
+                <button class="modal-close" onclick="closeInscriptionModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="event-details">
+                    <p id="modalEventDate"></p>
+                    <p id="modalEventTime"></p>
+                </div>
+
+                <form id="inscriptionForm" onsubmit="submitInscription(event)">
+                    <div class="form-group required">
+                        <label>Nom, prénom *</label>
+                        <input type="text" name="name" required placeholder="Jean Dupont">
+                    </div>
+
+                    <div class="form-group required">
+                        <label>Email *</label>
+                        <input type="email" name="email" required placeholder="jean@example.com">
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight: 600; display: block; margin-bottom: 10px;">Me contacter via</label>
+                        <div style="display: flex; gap: 20px;">
+                            <div>
+                                <input type="checkbox" id="discord" name="contact" value="discord" onchange="togglePseudoField('discord')">
+                                <label for="discord" style="margin: 0; font-weight: 600; cursor: pointer;">Discord</label>
+                            </div>
+                            <div>
+                                <input type="checkbox" id="instagram" name="contact" value="instagram" onchange="togglePseudoField('instagram')">
+                                <label for="instagram" style="margin: 0; font-weight: 600; cursor: pointer;">Instagram</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="discordPseudo" style="display: none; margin-bottom: 15px;">
+                        <label style="font-weight: 600; display: block; margin-bottom: 5px;">Pseudo Discord</label>
+                        <input type="text" name="discordPseudo" placeholder="ton_pseudo">
+                    </div>
+
+                    <div id="instagramPseudo" style="display: none; margin-bottom: 15px;">
+                        <label style="font-weight: 600; display: block; margin-bottom: 5px;">Pseudo Instagram</label>
+                        <input type="text" name="instagramPseudo" placeholder="@ton_pseudo">
+                    </div>
+
+                    <div class="form-group required">
+                        <label>Nombre de personnes *</label>
+                        <input type="number" name="persons" required min="1" max="5" placeholder="1">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Message (optionnel)</label>
+                        <textarea name="message" rows="3" placeholder="Allergies, commentaires..."></textarea>
+                    </div>
+
+                    <button type="submit" class="modal-btn">Demande d'inscription</button>
+                </form>
+
+                <div id="successMessage" style="display: none; background: #d4edda; border: 2px solid #155724; border-radius: 8px; padding: 20px; text-align: center; color: #155724; margin-top: 20px;">
+                    <h3>✅ Demande envoyée !</h3>
+                    <p>Consulte tes mails pour confirmer ton inscription.</p>
+                    <p style="font-size: 0.85em; margin-top: 10px;">L'équipe te validera dans les 24h.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
