@@ -492,23 +492,40 @@
         }
 
         /* États */
-        .loading {
+        /* Loader : squelette du calendrier */
+        .skeleton .skeleton-title {
+            display: inline-block;
+            min-width: 9em;
             text-align: center;
-            padding: 40px;
         }
 
-        .spinner {
-            border: 4px solid #eee;
-            border-top: 4px solid var(--orange);
-            border-radius: 50%;
-            width: 36px;
-            height: 36px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 12px;
+        .skeleton .month-arrow {
+            opacity: 0.3;
+            cursor: default;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .skeleton-event {
+            height: 24px;
+            margin: 3px 0;
+            border-radius: 4px;
+            background: linear-gradient(90deg, var(--creme-fonce) 25%, var(--creme) 50%, var(--creme-fonce) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s ease-in-out infinite;
+        }
+
+        .skeleton-event.short {
+            width: 65%;
+        }
+
+        @keyframes shimmer {
+            from { background-position: 200% 0; }
+            to { background-position: -200% 0; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .skeleton-event {
+                animation: none;
+            }
         }
 
         .error-box {
@@ -600,6 +617,11 @@
 
             .event {
                 padding: 2px 4px;
+                margin: 1px 0;
+            }
+
+            .skeleton-event {
+                height: 14px;
                 margin: 1px 0;
             }
 
@@ -758,13 +780,59 @@
             updateCalendarDisplay();
         }
 
-        function loadEvents() {
+        // Squelette du mois affiché, même structure que le vrai calendrier
+        function renderCalendarSkeleton() {
+            const today = new Date();
+            const date = new Date(today.getFullYear(), today.getMonth() + viewOffset, 1);
+            const month = date.getMonth();
+            const year = date.getFullYear();
+            const { days, startDay } = getMonthCalendar(year, month);
+
+            let html = '<div class="month-block skeleton" aria-busy="true" aria-label="Chargement des évènements">' +
+                       '<div class="month-nav">' +
+                       '<button class="month-arrow" disabled tabindex="-1">‹</button>' +
+                       '<h2 class="month-title skeleton-title">' + monthNames[month] + ' ' + year + '</h2>' +
+                       '<button class="month-arrow" disabled tabindex="-1">›</button>' +
+                       '</div>' +
+                       '<div class="calendar-table-wrapper"><table class="calendar"><thead><tr>';
+            dayNames.forEach(day => {
+                html += `<th class="weekday-header">${day}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            const weeks = Math.ceil((startDay + days) / 7);
+            for (let week = 0; week < weeks; week++) {
+                html += '<tr>';
+                for (let day = 0; day < 7; day++) {
+                    const n = week * 7 + day - startDay + 1;
+                    if (n < 1 || n > days) {
+                        html += '<td class="day-other-month"><div class="day-number"></div></td>';
+                        continue;
+                    }
+                    html += `<td><div class="day-number">${n}</div><div class="events-container">`;
+                    // Faux évènements répartis de façon déterministe
+                    const count = (n * 7 + day) % 3;
+                    for (let i = 0; i < count; i++) {
+                        html += `<div class="skeleton-event${(n + i) % 2 ? ' short' : ''}"></div>`;
+                    }
+                    html += '</div></td>';
+                }
+                html += '</tr>';
+            }
+
+            return html + '</tbody></table></div></div>';
+        }
+
+        // silent : rafraîchissement automatique, on garde le calendrier affiché
+        function loadEvents(silent = false) {
             const container = document.getElementById('calendar-container');
             const syncStatus = document.getElementById('sync-status');
 
             try {
-                syncStatus.textContent = 'Chargement des données...';
-                container.innerHTML = '<div class="loading"><div class="spinner"></div><p>Récupération des événements...</p></div>';
+                if (!silent) {
+                    syncStatus.textContent = 'Chargement des données...';
+                    container.innerHTML = renderCalendarSkeleton();
+                }
 
                 // JSONP for CORS
                 const callbackName = 'calendarCallback_' + Date.now();
@@ -1057,7 +1125,7 @@
         loadEvents();
 
         // Rafraîchir automatiquement selon la config
-        setInterval(loadEvents, API_CONFIG.refreshInterval);
+        setInterval(() => loadEvents(true), API_CONFIG.refreshInterval);
     </script>
 </body>
 </html>
