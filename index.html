@@ -35,6 +35,9 @@
         .container {
             max-width: 1400px;
             margin: 0 auto;
+        }
+
+        .content {
             background: var(--creme);
             border-radius: 10px;
             overflow: hidden;
@@ -520,7 +523,7 @@
                 padding: 0;
             }
 
-            .container {
+            .content {
                 border-radius: 0;
             }
 
@@ -620,70 +623,72 @@
             </div>
         </header>
 
-        <section class="intro">
-            <p>Retrouve ici les soirées jeux de société et les créneaux de jeu de rôle des <strong>deux prochains mois</strong>.</p>
-            <ul>
-                <li>👆 <strong>Clique sur un évènement</strong> pour voir son détail (horaire, description, inscription…)</li>
-                <li>🔎 <strong>Filtre</strong> par type ou par catégorie avec les boutons et les cases ci-dessous</li>
-                <li>🚪 Le bar est <strong>fermé le mardi</strong></li>
-            </ul>
-            <p>Envie de venir jouer ? Voir <a href="#participer">Comment participer</a> en bas de page.</p>
-        </section>
+        <div class="content">
+            <section class="intro">
+                <p>Retrouve ici les soirées jeux de société et les créneaux de jeu de rôle des <strong>deux prochains mois</strong>.</p>
+                <ul>
+                    <li>👆 <strong>Clique sur un évènement</strong> pour voir son détail (horaire, description, inscription…)</li>
+                    <li>🔎 <strong>Filtre</strong> par type ou par catégorie avec les boutons et les cases ci-dessous</li>
+                    <li>🚪 Le bar est <strong>fermé le mardi</strong></li>
+                </ul>
+                <p>Envie de venir jouer ? Voir <a href="#participer">Comment participer</a> en bas de page.</p>
+            </section>
 
-        <div class="controls">
-            <button class="btn active" onclick="filterCalendar('all', this)">📅 Tous les évènements</button>
-            <button class="btn" onclick="filterCalendar('jds', this)">🎯 Jeux de société</button>
-            <button class="btn" onclick="filterCalendar('jdr', this)">⚔️ Jeux de rôle</button>
-            <button class="btn btn-refresh" onclick="loadEvents()">🔄 Mettre à jour</button>
-        </div>
+            <div class="controls">
+                <button class="btn active" onclick="filterCalendar('all', this)">📅 Tous les évènements</button>
+                <button class="btn" onclick="filterCalendar('jds', this)">🎯 Jeux de société</button>
+                <button class="btn" onclick="filterCalendar('jdr', this)">⚔️ Jeux de rôle</button>
+                <button class="btn btn-refresh" onclick="loadEvents()">🔄 Mettre à jour</button>
+            </div>
 
-        <div class="legend" id="legend"></div>
+            <div class="legend" id="legend"></div>
 
-        <div class="calendar-wrapper">
-            <div id="calendar-container"></div>
-        </div>
+            <div class="calendar-wrapper">
+                <div id="calendar-container"></div>
+            </div>
 
-        <section class="infos" id="participer">
-            <h2>Comment participer</h2>
-            <div class="infos-grid">
-                <div class="info-card">
-                    <h3>🎯 Jeux de société</h3>
-                    <p>Tu t’inscris (<a href="https://discord.gg/UXwSRqtycS" target="_blank" rel="noopener">Discord</a>, <a href="https://www.instagram.com/aude12.paris/" target="_blank" rel="noopener">Instagram</a>, <a href="https://www.meetup.com/fr-FR/soiree-tables-ouvertes-a-theme-du-de-12/" target="_blank" rel="noopener">MeetUp</a>, <a href="https://vibes.lgbt/group/au-de-12-bar-a-jeux-de-societe-20260202160712" target="_blank" rel="noopener">Vibes</a> ou <a href="mailto:contact@au-de12paris.com">mail</a>), tu viens et tu te laisses guider. On s'occupe de tout !</p>
-                    <p>Les soirées jeux de société fonctionnent de <strong>deux façons</strong> :</p>
-                    <ul>
-                        <li><strong>Fonctionnement normal du bar</strong> : tu consommes comme d'habitude.</li>
-                        <li><strong>Par formule.</strong></li>
-                    </ul>
-                    <p>👉 Le fonctionnement de chaque soirée est indiqué dans son détail : <strong>clique sur l'évènement</strong> dans le calendrier pour le voir.</p>
-                </div>
-                <div class="info-card">
-                    <h3>⚔️ Jeux de rôle</h3>
-                    <p>Installe-toi dans une salle dédiée, privée et confortable (et non, pas en sous-sol !), avec tout le matériel nécessaire à portée de main : dés, figurines, cartes, livres… Il suffit simplement d’atteindre un minimum de consommations pendant la soirée.</p>
-                    <p>Débutant·e ou rôliste aguerri·e, viens comme tu es : on s’occupe du reste !</p>
+            <section class="infos" id="participer">
+                <h2>Comment participer</h2>
+                <div class="infos-grid">
+                    <div class="info-card">
+                        <h3>🎯 Jeux de société</h3>
+                        <p>Tu t’inscris (<a href="https://discord.gg/UXwSRqtycS" target="_blank" rel="noopener">Discord</a>, <a href="https://www.instagram.com/aude12.paris/" target="_blank" rel="noopener">Instagram</a>, <a href="https://www.meetup.com/fr-FR/soiree-tables-ouvertes-a-theme-du-de-12/" target="_blank" rel="noopener">MeetUp</a>, <a href="https://vibes.lgbt/group/au-de-12-bar-a-jeux-de-societe-20260202160712" target="_blank" rel="noopener">Vibes</a> ou <a href="mailto:contact@au-de12paris.com">mail</a>), tu viens et tu te laisses guider. On s'occupe de tout !</p>
+                        <p>Les soirées jeux de société fonctionnent de <strong>deux façons</strong> :</p>
+                        <ul>
+                            <li><strong>Fonctionnement normal du bar</strong> : tu consommes comme d'habitude.</li>
+                            <li><strong>Par formule.</strong></li>
+                        </ul>
+                        <p>👉 Le fonctionnement de chaque soirée est indiqué dans son détail : <strong>clique sur l'évènement</strong> dans le calendrier pour le voir.</p>
+                    </div>
+                    <div class="info-card">
+                        <h3>⚔️ Jeux de rôle</h3>
+                        <p>Installe-toi dans une salle dédiée, privée et confortable (et non, pas en sous-sol !), avec tout le matériel nécessaire à portée de main : dés, figurines, cartes, livres… Il suffit simplement d’atteindre un minimum de consommations pendant la soirée.</p>
+                        <p>Débutant·e ou rôliste aguerri·e, viens comme tu es : on s’occupe du reste !</p>
 
-                    <div class="room">
-                        <h4>La salle JDR</h4>
-                        <p>Elle est disponible tous les jours en dehors de nos initiations.</p>
-                        <p>Le jeudi et le samedi sont en priorité réservés à la Ligue Ludique.</p>
-                        <div class="notice">
-                            <p>⚠️ <strong>Pour réserver la salle JDR, ne passe pas par le système de réservation.</strong></p>
-                            <p>Envoie-nous simplement un message sur <a href="https://discord.gg/UXwSRqtycS" target="_blank" rel="noopener">Discord</a>, <a href="https://www.instagram.com/aude12.paris/" target="_blank" rel="noopener">Instagram</a> ou par <a href="mailto:contact@au-de12paris.com">mail</a>.</p>
+                        <div class="room">
+                            <h4>La salle JDR</h4>
+                            <p>Elle est disponible tous les jours en dehors de nos initiations.</p>
+                            <p>Le jeudi et le samedi sont en priorité réservés à la Ligue Ludique.</p>
+                            <div class="notice">
+                                <p>⚠️ <strong>Pour réserver la salle JDR, ne passe pas par le système de réservation.</strong></p>
+                                <p>Envoie-nous simplement un message sur <a href="https://discord.gg/UXwSRqtycS" target="_blank" rel="noopener">Discord</a>, <a href="https://www.instagram.com/aude12.paris/" target="_blank" rel="noopener">Instagram</a> ou par <a href="mailto:contact@au-de12paris.com">mail</a>.</p>
+                            </div>
+                            <p>La salle fonctionne avec un minimum de commande à atteindre sur la table :</p>
+                            <table>
+                            <thead>
+                                <tr><th>Créneau</th><th>Horaires</th><th>Minimum</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>Lun., mer., ven. après-midi</td><td>15h30 – 19h</td><td>70 €</td></tr>
+                                <tr><td>Lun., mer., ven. soir</td><td>19h – fin de service</td><td>90 €</td></tr>
+                                <tr><td>Dimanche</td><td>14h30 – fin de service</td><td>80 €</td></tr>
+                            </tbody>
+                            </table>
                         </div>
-                        <p>La salle fonctionne avec un minimum de commande à atteindre sur la table :</p>
-                        <table>
-                        <thead>
-                            <tr><th>Créneau</th><th>Horaires</th><th>Minimum</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr><td>Lun., mer., ven. après-midi</td><td>15h30 – 19h</td><td>70 €</td></tr>
-                            <tr><td>Lun., mer., ven. soir</td><td>19h – fin de service</td><td>90 €</td></tr>
-                            <tr><td>Dimanche</td><td>14h30 – fin de service</td><td>80 €</td></tr>
-                        </tbody>
-                        </table>
                     </div>
                 </div>
-            </div>
-        </section>
+            </section>
+        </div>
     </div>
 
     <!-- Modal pour les détails de l'événement -->
