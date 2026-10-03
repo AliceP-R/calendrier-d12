@@ -149,6 +149,12 @@
             min-width: 220px;
         }
 
+        /* Desktop : la section hors vue garde sa place pour une hauteur constante */
+        .legend .section.is-hidden {
+            visibility: hidden;
+            order: 1; /* passe après la section visible, qui reste alignée à gauche */
+        }
+
         .legend h4 {
             color: var(--texte-doux);
             font-size: 0.8em;
@@ -159,6 +165,7 @@
 
         .legend-hint {
             width: 100%;
+            order: 2;
             font-size: 0.8em;
             color: var(--texte-doux);
             margin-top: -16px;
@@ -550,6 +557,10 @@
                 gap: 12px;
             }
 
+            .legend .section.is-hidden {
+                display: none;
+            }
+
             .legend-hint {
                 margin-top: 0;
             }
@@ -845,8 +856,8 @@
             return display;
         }
 
-        function renderLegendSection(title, type, colorMap, labels) {
-            let html = `<div class="section"><h4>${title}</h4>`;
+        function renderLegendSection(title, type, colorMap, labels, visible) {
+            let html = `<div class="section${visible ? '' : ' is-hidden'}"><h4>${title}</h4>`;
             Object.keys(colorMap).forEach(colorId => {
                 const filterKey = `${type}_${colorId}`;
                 const isChecked = selectedColorFilters[filterKey] || false;
@@ -861,13 +872,11 @@
 
         function renderLegend() {
             let html = '';
-            if (currentFilter === 'all' || currentFilter === 'jds') {
-                html += renderLegendSection('Jeux de société', 'jds', googleColorMapJDS, googleColorMapJDSLabels);
-            }
-            if (currentFilter === 'all' || currentFilter === 'jdr') {
-                html += renderLegendSection('Jeux de rôle', 'jdr', googleColorMapJDR, googleColorMapJDRLabels);
-            }
-            html += '<p class="legend-hint">Coche une ou plusieurs catégories pour n\'afficher qu\'elles.</p>';
+            html += renderLegendSection('Jeux de société', 'jds', googleColorMapJDS, googleColorMapJDSLabels,
+                currentFilter === 'all' || currentFilter === 'jds');
+            html += renderLegendSection('Jeux de rôle', 'jdr', googleColorMapJDR, googleColorMapJDRLabels,
+                currentFilter === 'all' || currentFilter === 'jdr');
+            html +='<p class="legend-hint">Coche une ou plusieurs catégories pour n\'afficher qu\'elles.</p>';
             document.getElementById('legend').innerHTML = html;
         }
 
