@@ -496,6 +496,117 @@
             color: #B71C1C;
         }
 
+        /* Bloc d'explication */
+        .info-bloc {
+            margin: 20px;
+            padding: 20px;
+            background: #f0f8ff;
+            border-left: 5px solid #d75c1e;
+            border-radius: 4px;
+            color: #352419;
+            line-height: 1.6;
+        }
+
+        .info-bloc strong {
+            color: #d75c1e;
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #352419 0%, #4a3529 100%);
+            color: white;
+            padding: 20px;
+            border-bottom: 3px solid #d75c1e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5em;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.8em;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            opacity: 0.7;
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .modal-body h3 {
+            color: #352419;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .modal-body h3:first-child {
+            margin-top: 0;
+        }
+
+        .modal-body p {
+            color: #555;
+            margin: 8px 0;
+            line-height: 1.5;
+        }
+
         @media (max-width: 1024px) {
             .month-frame {
                 flex-direction: column;
@@ -683,6 +794,11 @@
             <button class="btn" onclick="loadEvents()" style="margin-left: auto;">🔄 Mettre à jour</button>
         </div>
 
+        <div class="info-bloc">
+            <strong>📖 Comment utiliser ce calendrier :</strong><br>
+            <strong>Cliquez sur un événement</strong> pour voir les détails complets (date, horaire, description, inscription...). Vous pouvez filtrer les événements par type (Jeux de société ou Jeux de rôle) ou mettre à jour manuellement pour voir les changements les plus récents.
+        </div>
+
         <div class="calendar-wrapper">
             <div id="calendar-container" style="width: 100%;"></div>
             <div id="legend-sidebar" style="display: none;"></div>
@@ -691,6 +807,19 @@
             <div class="info-box">
                 <p><strong>📌 Mise à jour automatique:</strong></p>
                 <p>Ce calendrier se met à jour automatiquement chaque fois que vous actualisez la page (F5). Les données proviennent directement de votre Google Agenda.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour les détails de l'événement -->
+    <div id="eventModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">Détails de l'événement</h2>
+                <button class="modal-close" onclick="closeEventModal()">✕</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Contenu dynamique -->
             </div>
         </div>
     </div>
@@ -896,7 +1025,8 @@ function loadEvents() {
                         dayEvents.forEach(event => {
                             const bgColor = getEventColor(event.colorId, event.type);
                             const borderColor = adjustColorBrightness(bgColor, -30);
-                            html += `<div class="event" style="background-color: ${bgColor}; border-left-color: ${borderColor};">${formatEventDisplay(event)}</div>`;
+                            const eventJson = JSON.stringify(event).replace(/"/g, '&quot;');
+                            html += `<div class="event" style="background-color: ${bgColor}; border-left-color: ${borderColor}; cursor: pointer;" onclick="openEventModal(${eventJson})">${formatEventDisplay(event)}</div>`;
                         });
 
                         html += `</div></td>`;
@@ -1055,7 +1185,8 @@ function loadEvents() {
                         dayEvents.forEach(event => {
                             const bgColor = getEventColor(event.colorId, event.type);
                             const borderColor = adjustColorBrightness(bgColor, -30);
-                            html += `<div class="event" style="background-color: ${bgColor}; border-left-color: ${borderColor};">${formatEventDisplay(event)}</div>`;
+                            const eventJson = JSON.stringify(event).replace(/"/g, '&quot;');
+                            html += `<div class="event" style="background-color: ${bgColor}; border-left-color: ${borderColor}; cursor: pointer;" onclick="openEventModal(${eventJson})">${formatEventDisplay(event)}</div>`;
                         });
 
                         html += `</div></td>`;
@@ -1078,6 +1209,75 @@ function loadEvents() {
             event.target.classList.add('active');
             updateCalendarDisplay();
         }
+
+        // Fonctions pour la modal d'événement
+        function openEventModal(event) {
+            const modal = document.getElementById('eventModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+
+            // Formater le titre avec l'événement
+            modalTitle.textContent = event.title || 'Détails de l\'événement';
+
+            // Parser la description pour retirer la partie "---interne---"
+            let description = event.description || '';
+            const internePart = description.indexOf('---interne---');
+            if (internePart !== -1) {
+                description = description.substring(0, internePart).trim();
+            }
+
+            // Formater la date et l'heure
+            let dateTime = '';
+            if (event.startDateTime) {
+                const date = new Date(event.startDateTime);
+                const dateStr = date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                const timeStr = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                dateTime = `${dateStr} à ${timeStr}`;
+            } else if (event.date) {
+                const date = new Date(event.date);
+                dateTime = date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            }
+
+            // Construire le contenu de la modal
+            let content = '';
+
+            if (dateTime) {
+                content += `<h3>📅 Date et heure</h3><p>${dateTime}</p>`;
+            }
+
+            if (description) {
+                content += `<h3>📝 Description</h3><p style="white-space: pre-wrap;">${description}</p>`;
+            }
+
+            if (event.location) {
+                content += `<h3>📍 Lieu</h3><p>${event.location}</p>`;
+            }
+
+            // Type d'événement
+            if (event.type) {
+                const typeDisplay = event.type === 'jds' ? '🎯 Jeux de société' : '⚔️ Jeux de rôle';
+                content += `<h3>Type</h3><p>${typeDisplay}</p>`;
+            }
+
+            if (!content) {
+                content = '<p style="color: #999; font-style: italic;">Aucun détail disponible pour cet événement.</p>';
+            }
+
+            modalBody.innerHTML = content;
+            modal.classList.add('active');
+        }
+
+        function closeEventModal() {
+            const modal = document.getElementById('eventModal');
+            modal.classList.remove('active');
+        }
+
+        // Fermer la modal en cliquant en dehors
+        document.getElementById('eventModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEventModal();
+            }
+        });
 
         // Charger les événements au démarrage
         loadEvents();
