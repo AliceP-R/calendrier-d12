@@ -192,15 +192,43 @@
             padding: 24px;
         }
 
+        .month-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin: 0 0 12px;
+        }
+
         .month-title {
             font-size: 1.5em;
             color: var(--brun);
-            margin: 0 0 12px;
+            margin: 0;
+            min-width: 9em;
+            text-align: center;
             text-transform: capitalize;
         }
 
-        .month-block + .month-block {
-            margin-top: 36px;
+        .month-arrow {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--brun);
+            border-radius: 50%;
+            background: white;
+            color: var(--brun);
+            font-size: 1.4em;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .month-arrow:hover:not(:disabled) {
+            background: var(--brun);
+            color: white;
+        }
+
+        .month-arrow:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
         }
 
         .calendar-table-wrapper {
@@ -842,10 +870,28 @@
 
         function renderMonth(month, year) {
             return '<div class="month-block">' +
-                   '<h2 class="month-title">' + monthNames[month] + ' ' + year + '</h2>' +
+                   '<div class="month-nav">' +
+                   '<button class="month-arrow" aria-label="Mois précédent" onclick="changeMonth(-1)"' + (viewOffset === 0 ? ' disabled' : '') + '>‹</button>' +
+                   '<h2 class="month-title" aria-live="polite">' + monthNames[month] + ' ' + year + '</h2>' +
+                   '<button class="month-arrow" aria-label="Mois suivant" onclick="changeMonth(1)"' + (viewOffset === 1 ? ' disabled' : '') + '>›</button>' +
+                   '</div>' +
                    renderCalendarOnly(month, year) +
                    '</div>';
         }
+
+        // 0 = mois en cours, 1 = mois suivant
+        let viewOffset = 0;
+
+        function changeMonth(delta) {
+            viewOffset = Math.min(1, Math.max(0, viewOffset + delta));
+            updateCalendarDisplay();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (document.getElementById('eventModal').classList.contains('active')) return;
+            if (e.key === 'ArrowLeft') changeMonth(-1);
+            else if (e.key === 'ArrowRight') changeMonth(1);
+        });
 
         function updateCalendarDisplay() {
             const today = new Date();
@@ -860,7 +906,7 @@
 
             renderLegend();
             document.getElementById('calendar-container').innerHTML =
-                renderMonth(currentMonth, currentYear) + renderMonth(nextMonth, nextYear);
+                viewOffset === 0 ? renderMonth(currentMonth, currentYear) : renderMonth(nextMonth, nextYear);
         }
 
         function renderCalendarOnly(month, year) {
