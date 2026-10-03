@@ -821,7 +821,10 @@
             events = events.filter(e => e.date === dateStr);
 
             // Filter by selected colors if any are selected
-            const selectedFilters = Object.keys(selectedColorFilters).filter(key => selectedColorFilters[key]);
+            // Seules les sélections des sections visibles comptent (sinon la vue serait vide)
+            const selectedFilters = Object.keys(selectedColorFilters).filter(key =>
+                selectedColorFilters[key] && (currentFilter === 'all' || key.startsWith(currentFilter + '_'))
+            );
             if (selectedFilters.length > 0) {
                 events = events.filter(e => {
                     const colorId = String(e.colorId);
