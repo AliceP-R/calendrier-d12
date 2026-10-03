@@ -658,9 +658,9 @@
             </section>
 
             <div class="controls">
-                <button class="btn active" onclick="filterCalendar('all', this)">📅 Tous les évènements</button>
-                <button class="btn" onclick="filterCalendar('jds', this)">🎯 Jeux de société</button>
-                <button class="btn" onclick="filterCalendar('jdr', this)">⚔️ Jeux de rôle</button>
+                <button class="btn active" data-filter="all" onclick="filterCalendar('all', this)">📅 Tous les évènements</button>
+                <button class="btn" data-filter="jds" onclick="filterCalendar('jds', this)">🎯 Jeux de société</button>
+                <button class="btn" data-filter="jdr" onclick="filterCalendar('jdr', this)">⚔️ Jeux de rôle</button>
                 <button class="btn btn-refresh" onclick="loadEvents()">🔄 Mettre à jour</button>
             </div>
 
@@ -777,7 +777,42 @@
 
         function updateColorFilter(checkbox) {
             selectedColorFilters[checkbox.value] = checkbox.checked;
+            syncUrl();
             updateCalendarDisplay();
+        }
+
+        // Catégories cochées qui s'appliquent à la vue courante
+        function getActiveColorFilters() {
+            return Object.keys(selectedColorFilters).filter(key =>
+                selectedColorFilters[key] && (currentFilter === 'all' || key.startsWith(currentFilter + '_'))
+            );
+        }
+
+        // Reflète les filtres dans l'URL pour pouvoir partager la vue
+        function syncUrl() {
+            const params = new URLSearchParams();
+            if (currentFilter !== 'all') params.set('type', currentFilter);
+            const cats = getActiveColorFilters();
+            if (cats.length > 0) params.set('cat', cats.join(','));
+            const query = params.toString().replace(/%2C/g, ',');
+            history.replaceState(null, '', location.pathname + (query ? '?' + query : '') + location.hash);
+        }
+
+        // Restaure les filtres depuis l'URL (valeurs inconnues ignorées)
+        function readUrl() {
+            const params = new URLSearchParams(location.search);
+            const type = params.get('type');
+            if (type === 'jds' || type === 'jdr') currentFilter = type;
+
+            (params.get('cat') || '').split(',').forEach(key => {
+                const [calType, colorId] = key.split('_');
+                const map = calType === 'jds' ? googleColorMapJDS : calType === 'jdr' ? googleColorMapJDR : null;
+                if (map && map[colorId]) selectedColorFilters[key] = true;
+            });
+
+            document.querySelectorAll('.controls .btn[data-filter]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === currentFilter);
+            });
         }
 
         // Squelette du mois affiché, même structure que le vrai calendrier
@@ -908,9 +943,7 @@
 
             // Filter by selected colors if any are selected
             // Seules les sélections des sections visibles comptent (sinon la vue serait vide)
-            const selectedFilters = Object.keys(selectedColorFilters).filter(key =>
-                selectedColorFilters[key] && (currentFilter === 'all' || key.startsWith(currentFilter + '_'))
-            );
+            const selectedFilters = getActiveColorFilters();
             if (selectedFilters.length > 0) {
                 events = events.filter(e => {
                     const colorId = String(e.colorId);
@@ -1048,6 +1081,7 @@
                 btn.classList.remove('active');
             });
             button.classList.add('active');
+            syncUrl();
             updateCalendarDisplay();
         }
 
@@ -1121,6 +1155,7 @@
         });
 
         // Charger les événements au démarrage
+        readUrl();
         renderLegend();
         loadEvents();
 
