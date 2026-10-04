@@ -1386,7 +1386,7 @@
 
             // La partie "---interne---" est déjà retirée par l'Apps Script
             const parsed = extractInscription(event.description || '');
-            let description = parsed.description;
+            let description = linkify(parsed.description);
             const inscription = parsed.inscription;
 
             // Formater la date et l'heure
@@ -1448,6 +1448,19 @@
         };
 
         let currentInscription = null;
+
+        // Rend cliquables les liens https://… écrits en simple texte,
+        // sans toucher aux liens déjà cliquables ni à l'intérieur des balises
+        function linkify(html) {
+            return html.split(/(<a\b[^>]*>[\s\S]*?<\/a>|<[^>]*>)/i).map((part, i) => {
+                if (i % 2) return part;
+                return part.replace(/https?:\/\/(?:(?!&nbsp;)[^\s<>"'])+/gi, url => {
+                    const fin = url.match(/[.,;:!?)\]]+$/);
+                    const lien = fin ? url.slice(0, -fin[0].length) : url;
+                    return `<a href="${lien}" target="_blank" rel="noopener">${lien}</a>${fin ? fin[0] : ''}`;
+                });
+            }).join('');
+        }
 
         // Lit la ligne « Inscription : <lien> » ou « Inscription : aucune » de la description
         // (Google Agenda peut l'entourer de balises HTML) et la retire du texte affiché
