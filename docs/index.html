@@ -914,40 +914,37 @@
         // URL du Google Apps Script déployé (depuis config.js)
         const API_URL = API_CONFIG.apiUrl;
 
-        // Mappages des couleurs Google Calendar - DIFFÉRENTS PAR CALENDRIER!
-        const googleColorMapJDS = {
-          '3': '#512DA8',   // Raisin - Pourpre = Soirée BOTC
-          '5': '#FDD835',   // Banane - Jaune = Tables Ouvertes
-          '7': '#1E88E5',   // Paon - Bleu = Soirée Découverte
+        // Couleurs Google Agenda : un tableau par calendrier, car une même couleur
+        // n'a pas le même sens en JDS et en JDR.
+        //   nom    : libellé de la légende
+        //   teinte : couleur affichée
+        //   bouton : 'inscription' (« Demander à m'inscrire »), 'reservation' (« Demander à réserver la salle ») ou null (aucun)
+        //   salle  : JDR uniquement, effet sur la disponibilité de la salle :
+        //            'bloque', 'libre' (ne bloque pas) ou 'ligue' (ne bloque pas une demande un jeudi/samedi)
+        const COULEURS = {
+          jds: {
+            '3': { nom: 'Soirée BOTC',       teinte: '#512DA8', bouton: 'inscription' }, // Raisin
+            '5': { nom: 'Tables Ouvertes',   teinte: '#FDD835', bouton: 'inscription' }, // Banane
+            '7': { nom: 'Soirée Découverte', teinte: '#1E88E5', bouton: 'inscription' }  // Paon
+          },
+          jdr: {
+            '2':  { nom: 'Réservation Client',                     teinte: '#7E57C2', bouton: null,          salle: 'bloque' }, // Lavande
+            '3':  { nom: 'Créneau Libre',                          teinte: '#55b080', bouton: 'reservation', salle: 'libre' },  // Sauge
+            '4':  { nom: 'MJ PRO - Vadrouilles & Magie',           teinte: '#E53935', bouton: 'inscription', salle: 'bloque' }, // Tomate
+            '5':  { nom: 'OS & Initiation',                        teinte: '#FB8C00', bouton: 'inscription', salle: 'bloque' }, // Mandarine
+            '8':  { nom: 'MJ PRO - Campagne Semi-Ouverte',         teinte: '#455A64', bouton: null,          salle: 'bloque' }, // Graphite
+            '11': { nom: 'Créneau prioritaire à la Ligue Ludique', teinte: '#F06292', bouton: null,          salle: 'ligue' }   // Flamant rose
+          }
         };
 
-        const googleColorMapJDSLabels = {
-          '3': 'Soirée BOTC',
-          '5': 'Tables Ouvertes',
-          '7': 'Soirée Découverte'
-        };
-
-        const googleColorMapJDR = {
-          '2': '#7E57C2',   // Lavande - Violet = Réservation Client
-          '3': '#55b080',   // Sauge - Vert = Créneau Libre
-          '4': '#E53935',   // Tomate - Rouge = MJ PRO - Vadrouilles & Magie
-          '5': '#FB8C00',   // Mandarine - Orange = OS & Initiation
-          '8': '#455A64',   // Graphite - Gris = MJ PRO - Campagne Semi-Ouverte
-          '11': '#F06292'   // Flamant Rose - Rose = Créneau prioritaire à la Ligue Ludique
-        };
-
-        const googleColorMapJDRLabels = {
-          '2': 'Réservation Client',
-          '3': 'Créneau Libre',
-          '4': 'MJ PRO - Vadrouilles & Magie',
-          '5': 'OS & Initiation',
-          '8': 'MJ PRO - Campagne Semi-Ouverte',
-          '11': 'Créneau prioritaire à la Ligue Ludique'
-        };
+        // Entrée du tableau pour un événement (undefined si sans couleur ou couleur inconnue)
+        function couleurDe(calendarType, colorId) {
+          return (COULEURS[calendarType] || {})[String(colorId)];
+        }
 
         function getEventColor(colorId, calendarType) {
-          const map = calendarType === 'jds' ? googleColorMapJDS : googleColorMapJDR;
-          return map[colorId] || '#D2691E'; // Couleur par défaut si pas de couleur
+          const couleur = couleurDe(calendarType, colorId);
+          return couleur ? couleur.teinte : '#D2691E'; // Couleur par défaut si pas de couleur
         }
 
         function updateColorFilter(checkbox) {
@@ -981,8 +978,7 @@
 
             (params.get('cat') || '').split(',').forEach(key => {
                 const [calType, colorId] = key.split('_');
-                const map = calType === 'jds' ? googleColorMapJDS : calType === 'jdr' ? googleColorMapJDR : null;
-                if (map && map[colorId]) selectedColorFilters[key] = true;
+                if (couleurDe(calType, colorId)) selectedColorFilters[key] = true;
             });
 
             document.querySelectorAll('.controls .btn[data-filter]').forEach(btn => {
@@ -1140,15 +1136,15 @@
             return display;
         }
 
-        function renderLegendSection(title, type, colorMap, labels, visible) {
+        function renderLegendSection(title, type, visible) {
             let html = `<div class="section${visible ? '' : ' is-hidden'}"><h4>${title}</h4>`;
-            Object.keys(colorMap).forEach(colorId => {
+            Object.entries(COULEURS[type]).forEach(([colorId, couleur]) => {
                 const filterKey = `${type}_${colorId}`;
                 const isChecked = selectedColorFilters[filterKey] || false;
                 html += `<label class="color-filter-checkbox">
                     <input type="checkbox" value="${filterKey}" ${isChecked ? 'checked' : ''} onchange="updateColorFilter(this)">
-                    <span class="legend-color" style="background-color: ${colorMap[colorId]};"></span>
-                    <span>${labels[colorId]}</span>
+                    <span class="legend-color" style="background-color: ${couleur.teinte};"></span>
+                    <span>${couleur.nom}</span>
                 </label>`;
             });
             return html + '</div>';
@@ -1156,10 +1152,8 @@
 
         function renderLegend() {
             let html = '';
-            html += renderLegendSection('🎯 Jeux de société', 'jds', googleColorMapJDS, googleColorMapJDSLabels,
-                currentFilter === 'all' || currentFilter === 'jds');
-            html += renderLegendSection('⚔️ Jeux de rôle', 'jdr', googleColorMapJDR, googleColorMapJDRLabels,
-                currentFilter === 'all' || currentFilter === 'jdr');
+            html += renderLegendSection('🎯 Jeux de société', 'jds', currentFilter === 'all' || currentFilter === 'jds');
+            html += renderLegendSection('⚔️ Jeux de rôle', 'jdr', currentFilter === 'all' || currentFilter === 'jdr');
             html +='<p class="legend-hint">Coche une ou plusieurs catégories pour n\'afficher qu\'elles.<br>Dans chaque case, 🎯 et ⚔️ indiquent le nombre de jeux de société et de jeux de rôle du jour.</p>';
             document.getElementById('legend').innerHTML = html;
         }
@@ -1277,7 +1271,6 @@
             3: { horaires: '17h30 – fin de service', minimum: '90 €' },
             5: { horaires: '17h30 – fin de service', minimum: '90 €' }
         };
-        const DISPO_FREE_COLOR = '3'; // « Créneau Libre » ne bloque pas la salle
         const DISPO_NEXT_COUNT = 5;
 
         function toDateStr(d) {
@@ -1301,7 +1294,8 @@
         }
 
         function blockingJdrEvents(dateStr) {
-            return allEvents.jdr.filter(e => e.date === dateStr && String(e.colorId) !== DISPO_FREE_COLOR);
+            // Un événement sans couleur bloque la salle
+            return allEvents.jdr.filter(e => e.date === dateStr && (couleurDe('jdr', e.colorId) || {}).salle !== 'libre');
         }
 
         function renderDispoNext() {
@@ -1339,7 +1333,7 @@
             const inCalendar = date <= dispoHorizon();
             const blocking = inCalendar ? blockingJdrEvents(input.value) : [];
             // Les créneaux de la Ligue Ludique ne bloquent pas une demande faite un jeudi ou un samedi
-            const others = blocking.filter(e => String(e.colorId) !== '11');
+            const others = blocking.filter(e => (couleurDe('jdr', e.colorId) || {}).salle !== 'ligue');
             let state, html;
 
             if (date < today) {
@@ -1453,10 +1447,6 @@
             }
         };
 
-        // Couleurs JDR sans inscription : Réservation Client, MJ PRO Campagne, Ligue Ludique
-        const JDR_SANS_INSCRIPTION = ['2', '8', '11'];
-        const JDR_CRENEAU_LIBRE = '3';
-
         let currentInscription = null;
 
         // Lit la ligne « Inscription : <lien> » ou « Inscription : aucune » de la description
@@ -1484,12 +1474,8 @@
             if (end < new Date()) return null;
             if (inscription) return inscription.url ? 'externe' : null;
             // Sans couleur : pas de bouton (réservations privées, privatisations…)
-            if (!event.colorId) return null;
-            if (event.type === 'jdr') {
-                if (JDR_SANS_INSCRIPTION.includes(event.colorId)) return null;
-                if (event.colorId === JDR_CRENEAU_LIBRE) return 'reservation';
-            }
-            return 'inscription';
+            const couleur = couleurDe(event.type, event.colorId);
+            return couleur ? couleur.bouton : null;
         }
 
         function renderInscription(mode, inscription) {
