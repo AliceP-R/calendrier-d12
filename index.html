@@ -272,9 +272,27 @@
 
         .calendar th:nth-child(2) {
             background: #a9998a;
+            overflow: hidden;
+            text-overflow: clip;
+            white-space: nowrap;
+        }
+
+        .weekday-header .day-short {
+            display: none;
+        }
+
+        @media (max-width: 1100px) {
+            .calendar th:nth-child(2) .day-full {
+                display: none;
+            }
+
+            .calendar th:nth-child(2) .day-short {
+                display: inline;
+            }
         }
 
         .calendar td:nth-child(2) .day-number,
+        .calendar td:nth-child(2) .day-counts,
         .calendar td:nth-child(2) .events-container {
             display: none;
         }
@@ -300,6 +318,22 @@
             font-size: 1.1em;
             margin-bottom: 4px;
             color: var(--texte-doux);
+        }
+
+        .day-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .day-counts {
+            display: flex;
+            gap: 6px;
+            font-size: 0.8em;
+            font-weight: 600;
+            color: var(--texte-doux);
+            white-space: nowrap;
         }
 
         .day-other-month {
@@ -629,6 +663,10 @@
                 padding: 6px 2px;
                 font-size: 0.7em;
             }
+
+            .day-counts {
+                gap: 3px;
+            }
         }
     </style>
 </head>
@@ -732,6 +770,11 @@
                            'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
         const dayNames = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
+        // Nom complet + abrégé : le CSS affiche l'abrégé dans la colonne fine du mardi sur petit écran
+        function renderWeekdayHeader(day) {
+            return `<th class="weekday-header"><span class="day-full">${day}</span><span class="day-short">${day.slice(0, 3)}.</span></th>`;
+        }
+
         let allEvents = { jds: [], jdr: [] };
         let currentFilter = 'all';
         let selectedColorFilters = {}; // Tracks which colors are selected: {jds_3, jds_5, jdr_2, etc}
@@ -831,7 +874,7 @@
                        '</div>' +
                        '<div class="calendar-table-wrapper"><table class="calendar"><thead><tr>';
             dayNames.forEach(day => {
-                html += `<th class="weekday-header">${day}</th>`;
+                html += renderWeekdayHeader(day);
             });
             html += '</tr></thead><tbody>';
 
@@ -980,11 +1023,11 @@
 
         function renderLegend() {
             let html = '';
-            html += renderLegendSection('Jeux de société', 'jds', googleColorMapJDS, googleColorMapJDSLabels,
+            html += renderLegendSection('🎯 Jeux de société', 'jds', googleColorMapJDS, googleColorMapJDSLabels,
                 currentFilter === 'all' || currentFilter === 'jds');
-            html += renderLegendSection('Jeux de rôle', 'jdr', googleColorMapJDR, googleColorMapJDRLabels,
+            html += renderLegendSection('⚔️ Jeux de rôle', 'jdr', googleColorMapJDR, googleColorMapJDRLabels,
                 currentFilter === 'all' || currentFilter === 'jdr');
-            html +='<p class="legend-hint">Coche une ou plusieurs catégories pour n\'afficher qu\'elles.</p>';
+            html +='<p class="legend-hint">Coche une ou plusieurs catégories pour n\'afficher qu\'elles.<br>Dans chaque case, 🎯 et ⚔️ indiquent le nombre de jeux de société et de jeux de rôle du jour.</p>';
             document.getElementById('legend').innerHTML = html;
         }
 
@@ -1034,7 +1077,7 @@
             let html = `<div class="calendar-table-wrapper"><table class="calendar"><thead><tr>`;
 
             dayNames.forEach(day => {
-                html += `<th class="weekday-header">${day}</th>`;
+                html += renderWeekdayHeader(day);
             });
             html += `</tr></thead><tbody>`;
 
@@ -1054,7 +1097,15 @@
                         const dayEvents = getEventsForDate(dateStr);
 
                         html += `<td>`;
-                        html += `<div class="day-number">${dayCounter}</div>`;
+                        const jdsCount = dayEvents.filter(e => e.type === 'jds').length;
+                        const jdrCount = dayEvents.filter(e => e.type === 'jdr').length;
+                        let counts = '';
+                        if (jdsCount) counts += `<span title="Jeux de société">🎯 ${jdsCount}</span>`;
+                        if (jdrCount) counts += `<span title="Jeux de rôle">⚔️ ${jdrCount}</span>`;
+
+                        html += `<div class="day-header"><div class="day-number">${dayCounter}</div>`;
+                        if (counts) html += `<div class="day-counts">${counts}</div>`;
+                        html += `</div>`;
                         html += `<div class="events-container">`;
 
                         dayEvents.forEach(event => {
