@@ -1390,14 +1390,9 @@
             // Formater le titre avec l'événement
             modalTitle.textContent = event.title || 'Détails de l\'événement';
 
-            // Parser la description pour retirer la partie "---interne---"
-            let description = event.description || '';
-            const internePart = description.indexOf('---interne---');
-            if (internePart !== -1) {
-                description = description.substring(0, internePart).trim();
-            }
-            const parsed = extractInscription(description);
-            description = parsed.description;
+            // La partie "---interne---" est déjà retirée par l'Apps Script
+            const parsed = extractInscription(event.description || '');
+            let description = parsed.description;
             const inscription = parsed.inscription;
 
             // Formater la date et l'heure
@@ -1488,6 +1483,8 @@
             const end = new Date(event.endDateTime || event.startDateTime || event.date);
             if (end < new Date()) return null;
             if (inscription) return inscription.url ? 'externe' : null;
+            // Sans couleur : pas de bouton (réservations privées, privatisations…)
+            if (!event.colorId) return null;
             if (event.type === 'jdr') {
                 if (JDR_SANS_INSCRIPTION.includes(event.colorId)) return null;
                 if (event.colorId === JDR_CRENEAU_LIBRE) return 'reservation';
