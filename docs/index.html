@@ -128,16 +128,6 @@
             color: white;
         }
 
-        .btn-refresh {
-            margin-left: auto;
-            border-color: var(--texte-doux);
-            color: var(--texte-doux);
-        }
-
-        .btn-refresh:hover {
-            background: var(--texte-doux);
-        }
-
         /* Légende (une seule, partagée par les deux mois) */
         .legend {
             display: flex;
@@ -626,10 +616,6 @@
                 font-size: 0.85em;
             }
 
-            .btn-refresh {
-                margin-left: 0;
-            }
-
             .month-title {
                 font-size: 1.2em;
             }
@@ -698,9 +684,7 @@
             <div class="controls">
                 <button class="btn active" data-filter="all" onclick="filterCalendar('all', this)">📅 Tous les évènements</button>
                 <button class="btn" data-filter="jds" onclick="filterCalendar('jds', this)">🎯 Jeux de société</button>
-                <button class="btn" data-filter="jdr" onclick="filterCalendar('jdr', this)">⚔️ Jeux de rôle</button>
-                <button class="btn btn-refresh" onclick="loadEvents()">🔄 Mettre à jour</button>
-            </div>
+                <button class="btn" data-filter="jdr" onclick="filterCalendar('jdr', this)">⚔️ Jeux de rôle</button>            </div>
 
             <div class="legend" id="legend"></div>
 
@@ -1210,8 +1194,15 @@
         renderLegend();
         loadEvents();
 
-        // Rafraîchir automatiquement selon la config
-        setInterval(() => loadEvents(true), API_CONFIG.refreshInterval);
+        // Rafraîchir automatiquement selon la config, seulement si l'onglet est visible
+        setInterval(() => {
+            if (!document.hidden) loadEvents(true);
+        }, API_CONFIG.refreshInterval);
+
+        // Recharger dès que le visiteur revient sur l'onglet
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) loadEvents(true);
+        });
     </script>
 </body>
 </html>
