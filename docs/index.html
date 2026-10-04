@@ -421,6 +421,82 @@
             margin-top: 0;
         }
 
+        /* Demande d'inscription / de réservation dans la modale */
+        .inscription {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--creme-fonce);
+        }
+
+        .btn-plein {
+            background: var(--vert);
+            color: white;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .btn-plein:hover {
+            opacity: 0.9;
+        }
+
+        .insc-form {
+            margin-top: 14px;
+        }
+
+        .insc-champs {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .insc-champs label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 0.9em;
+            color: var(--texte-doux);
+            flex: 1 1 140px;
+        }
+
+        .insc-champs input {
+            padding: 6px 8px;
+            border: 1.5px solid var(--creme-fonce);
+            border-radius: 6px;
+            font: inherit;
+            color: var(--texte);
+        }
+
+        .insc-apercu {
+            margin: 12px 0;
+            padding: 10px 12px;
+            background: var(--creme);
+            border-radius: 6px;
+            font-size: 0.95em;
+            white-space: pre-wrap;
+        }
+
+        .insc-canaux {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .insc-canaux a {
+            text-decoration: none;
+        }
+
+        .insc-aide {
+            margin-top: 10px;
+            font-size: 0.85em;
+            color: var(--texte-doux);
+        }
+
+        .insc-copie {
+            margin-top: 8px;
+            font-weight: 600;
+            color: var(--vert);
+        }
+
         /* Comment participer / Salle JDR */
         .infos {
             padding: 8px 24px 32px;
@@ -1320,6 +1396,9 @@
             if (internePart !== -1) {
                 description = description.substring(0, internePart).trim();
             }
+            const parsed = extractInscription(description);
+            description = parsed.description;
+            const inscription = parsed.inscription;
 
             // Formater la date et l'heure
             let dateTime = '';
@@ -1358,8 +1437,170 @@
                 content = '<p style="color: #999; font-style: italic;">Aucun détail disponible pour cet événement.</p>';
             }
 
+            const mode = getInscriptionMode(event, inscription);
+            content += renderInscription(mode, inscription);
+
             modalBody.innerHTML = content;
+            currentInscription = { mode, event };
             modal.classList.add('active');
+        }
+
+        // Contacts pour les demandes d'inscription
+        const CONTACTS = {
+            mail: 'contact@au-de12paris.com',
+            instagram: 'https://ig.me/m/aude12.paris',
+            meetup: 'https://www.meetup.com/fr-FR/soiree-tables-ouvertes-a-theme-du-de-12/',
+            vibes: 'https://vibes.lgbt/group/au-de-12-bar-a-jeux-de-societe-20260202160712',
+            discordInvite: 'https://discord.gg/UXwSRqtycS',
+            discord: {
+                jds: 'https://discord.com/channels/1429535283506053232/1468199387728707656',
+                jdr: 'https://discord.com/channels/1429535283506053232/1429551352765485106'
+            }
+        };
+
+        // Couleurs JDR sans inscription : Réservation Client, MJ PRO Campagne, Ligue Ludique
+        const JDR_SANS_INSCRIPTION = ['2', '8', '11'];
+        const JDR_CRENEAU_LIBRE = '3';
+
+        let currentInscription = null;
+
+        // Lit la ligne « Inscription : <lien> » ou « Inscription : aucune » de la description
+        // (Google Agenda peut l'entourer de balises HTML) et la retire du texte affiché
+        function extractInscription(description) {
+            const re = /(?:<(?!br)[a-z][^>]*>\s*)*inscription(?:\s|&nbsp;|<[^>]*>)*:([\s\S]*?)(?=<br\s*\/?>|\n|<\/p>|<\/div>|$)/i;
+            const match = description.match(re);
+            if (!match) return { description, inscription: null };
+
+            const rest = match[1];
+            const url = rest.match(/https?:\/\/[^\s"'<>]+/);
+            const text = rest.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+            let inscription = null;
+            if (url) inscription = { url: url[0].replace(/&amp;/g, '&') };
+            else if (/^aucune/i.test(text)) inscription = { none: true };
+            else return { description, inscription: null };
+
+            const cleaned = description.replace(match[0], '')
+                .replace(/^(?:\s|<br\s*\/?>)+|(?:\s|<br\s*\/?>)+$/gi, '');
+            return { description: cleaned, inscription };
+        }
+
+        function getInscriptionMode(event, inscription) {
+            const end = new Date(event.endDateTime || event.startDateTime || event.date);
+            if (end < new Date()) return null;
+            if (inscription) return inscription.url ? 'externe' : null;
+            if (event.type === 'jdr') {
+                if (JDR_SANS_INSCRIPTION.includes(event.colorId)) return null;
+                if (event.colorId === JDR_CRENEAU_LIBRE) return 'reservation';
+            }
+            return 'inscription';
+        }
+
+        function renderInscription(mode, inscription) {
+            if (!mode) return '';
+            if (mode === 'externe') {
+                return `<div class="inscription"><a class="btn btn-plein" href="${inscription.url}" target="_blank" rel="noopener">✋ S'inscrire sur le site de l'organisateur</a></div>`;
+            }
+
+            const label = mode === 'reservation' ? '🔑 Demander à réserver la salle' : '✋ Demander à m’inscrire';
+            const canaux = mode === 'reservation'
+                ? ['mail', 'discord', 'instagram']
+                : ['mail', 'discord', 'instagram', 'meetup', 'vibes'];
+            const noms = { mail: '📧 Mail', discord: '💬 Discord', instagram: '📷 Instagram', meetup: '👥 Meetup', vibes: '🌈 Vibes' };
+            const boutons = canaux.map(c =>
+                `<a class="btn" id="insc-${c}" target="${c === 'mail' ? '_self' : '_blank'}" rel="noopener" onclick="onInscriptionCanal('${c}')">${noms[c]}</a>`
+            ).join('');
+
+            return `<div class="inscription">
+                <button class="btn btn-plein" onclick="toggleInscription()">${label}</button>
+                <div class="insc-form" id="insc-form" hidden>
+                    <div class="insc-champs">
+                        <label>Prénom<input type="text" id="insc-prenom" autocomplete="given-name" oninput="updateInscription()"></label>
+                        <label>Nombre de personnes<input type="number" id="insc-nombre" min="1" value="1" oninput="updateInscription()"></label>
+                    </div>
+                    <div class="insc-apercu" id="insc-apercu"></div>
+                    <div class="insc-canaux">${boutons}</div>
+                    <p class="insc-aide">Mail : le message est déjà rédigé. Pour les autres, il est copié : il ne reste qu’à le coller dans la conversation.</p>
+                    <p class="insc-aide">Pas encore sur notre Discord ? <a href="${CONTACTS.discordInvite}" target="_blank" rel="noopener">Rejoindre le serveur</a></p>
+                    <div class="insc-copie" id="insc-copie" aria-live="polite"></div>
+                </div>
+            </div>`;
+        }
+
+        function toggleInscription() {
+            const form = document.getElementById('insc-form');
+            form.hidden = !form.hidden;
+            if (!form.hidden) {
+                updateInscription();
+                document.getElementById('insc-prenom').focus();
+            }
+        }
+
+        function buildInscriptionMessage() {
+            const { mode, event } = currentInscription;
+            const prenom = document.getElementById('insc-prenom').value.trim();
+            const nombre = Math.max(1, parseInt(document.getElementById('insc-nombre').value, 10) || 1);
+            const personnes = `${nombre} personne${nombre > 1 ? 's' : ''}`;
+
+            const start = new Date(event.startDateTime || event.date);
+            const jour = start.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            const jourCourt = start.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+            const heure = d => d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h');
+
+            let body, subject;
+            if (mode === 'reservation') {
+                const horaire = event.isAllDay || !event.endDateTime ? '' : ` (de ${heure(start)} à ${heure(new Date(event.endDateTime))})`;
+                body = `Bonjour ! Je souhaiterais réserver la salle JDR le ${jour}${horaire} pour ${personnes}.`;
+                subject = `Demande de réservation de la salle JDR – ${jourCourt}`;
+            } else {
+                const horaire = event.isAllDay || !event.startDateTime ? '' : ` à ${heure(start)}`;
+                body = `Bonjour ! Je souhaiterais m’inscrire à « ${event.title} » le ${jour}${horaire} pour ${personnes}.`;
+                subject = `Demande d’inscription – ${event.title} – ${jourCourt}`;
+            }
+            if (prenom) body += ` Prénom : ${prenom}.`;
+            body += ' Merci !';
+            return { body, subject };
+        }
+
+        function updateInscription() {
+            const { body, subject } = buildInscriptionMessage();
+            document.getElementById('insc-apercu').textContent = body;
+            document.getElementById('insc-copie').textContent = '';
+
+            const liens = {
+                mail: `mailto:${CONTACTS.mail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
+                discord: CONTACTS.discord[currentInscription.event.type],
+                instagram: CONTACTS.instagram,
+                meetup: CONTACTS.meetup,
+                vibes: CONTACTS.vibes
+            };
+            Object.entries(liens).forEach(([canal, url]) => {
+                const a = document.getElementById('insc-' + canal);
+                if (a) a.href = url;
+            });
+        }
+
+        // Copie synchrone (avant l'ouverture du nouvel onglet) + API moderne en complément
+        function copyText(text) {
+            let ok = false;
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try { ok = document.execCommand('copy'); } catch (e) {}
+            ta.remove();
+            if (navigator.clipboard) navigator.clipboard.writeText(text).catch(() => {});
+            return ok || !!navigator.clipboard;
+        }
+
+        function onInscriptionCanal(canal) {
+            if (canal === 'mail') return;
+            const ok = copyText(buildInscriptionMessage().body);
+            document.getElementById('insc-copie').textContent = ok
+                ? '✅ Message copié ! Colle-le dans la conversation.'
+                : 'Copie impossible : sélectionne le message ci-dessus pour le copier.';
         }
 
         function closeEventModal() {
