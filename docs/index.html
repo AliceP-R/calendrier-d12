@@ -515,6 +515,68 @@
             padding-right: 0;
         }
 
+        /* Recherche de dispo de la salle JDR */
+        .dispo {
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px dashed var(--creme-fonce);
+        }
+
+        .dispo-picker {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dispo-picker input {
+            font: inherit;
+            padding: 4px 8px;
+            border: 1.5px solid var(--creme-fonce);
+            border-radius: 4px;
+        }
+
+        #dispo-verdict:not(:empty) {
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 4px;
+            border-left: 4px solid var(--texte-doux);
+            background: #f6f1ea;
+        }
+
+        #dispo-verdict.libre { border-left-color: var(--vert); background: #eef3e6; }
+        #dispo-verdict.occupee { border-left-color: #c62828; background: #fbe9e7; }
+        #dispo-verdict.demande { border-left-color: var(--orange); background: #fbeee3; }
+
+        .dispo-next-title {
+            margin-top: 12px;
+            font-weight: 700;
+        }
+
+        .info-card #dispo-next {
+            margin: 6px 0 0;
+            list-style: none;
+        }
+
+        #dispo-next li {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 5px 0;
+            border-top: 1px dashed var(--creme-fonce);
+            margin-top: 0;
+        }
+
+        #dispo-next li span:last-child {
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .dispo-muted {
+            color: var(--texte-doux);
+            font-style: italic;
+        }
+
         /* États */
         /* Loader : squelette du calendrier */
         .skeleton .skeleton-title {
@@ -728,6 +790,17 @@
                                 <tr><td>Dimanche</td><td>14h30 – fin de service</td><td>80 €</td></tr>
                             </tbody>
                             </table>
+
+                            <div class="dispo">
+                                <h4>La salle est-elle libre ?</h4>
+                                <label class="dispo-picker">
+                                    Choisis une date :
+                                    <input type="date" id="dispo-date" onchange="renderDispoVerdict()">
+                                </label>
+                                <div id="dispo-verdict" aria-live="polite"></div>
+                                <p class="dispo-next-title">Prochaines dates libres :</p>
+                                <ul id="dispo-next"><li class="dispo-muted">Chargement…</li></ul>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -917,6 +990,7 @@
 
                     syncStatus.textContent = `Mis à jour le ${new Date(data.generated).toLocaleString('fr-FR')}`;
                     updateCalendarDisplay();
+                    renderDispo();
 
                     // Clean up
                     delete window[callbackName];
@@ -1117,6 +1191,118 @@
             button.classList.add('active');
             syncUrl();
             updateCalendarDisplay();
+        }
+
+        // Recherche de dispo de la salle JDR
+        // Créneaux publics par jour de la semaine (0 = dimanche)
+        const dispoSlots = {
+            0: { horaires: '14h30 – fin de service', minimum: '80 €' },
+            1: { horaires: '17h30 – fin de service', minimum: '90 €' },
+            3: { horaires: '17h30 – fin de service', minimum: '90 €' },
+            5: { horaires: '17h30 – fin de service', minimum: '90 €' }
+        };
+        const DISPO_FREE_COLOR = '3'; // « Créneau Libre » ne bloque pas la salle
+        const DISPO_NEXT_COUNT = 5;
+
+        function toDateStr(d) {
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        function parseDateStr(str) {
+            const [y, m, d] = str.split('-').map(Number);
+            return new Date(y, m - 1, d);
+        }
+
+        function formatDispoDate(d) {
+            const s = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+            return s.charAt(0).toUpperCase() + s.slice(1);
+        }
+
+        // L'API couvre le mois en cours et le suivant
+        function dispoHorizon() {
+            const today = new Date();
+            return new Date(today.getFullYear(), today.getMonth() + 2, 0);
+        }
+
+        function blockingJdrEvents(dateStr) {
+            return allEvents.jdr.filter(e => e.date === dateStr && String(e.colorId) !== DISPO_FREE_COLOR);
+        }
+
+        function renderDispoNext() {
+            const list = document.getElementById('dispo-next');
+            const horizon = dispoHorizon();
+            const day = new Date();
+            day.setHours(0, 0, 0, 0);
+            const found = [];
+            while (day <= horizon && found.length < DISPO_NEXT_COUNT) {
+                const slot = dispoSlots[day.getDay()];
+                if (slot && blockingJdrEvents(toDateStr(day)).length === 0) {
+                    found.push(`<li><span>${formatDispoDate(day)} · ${slot.horaires}</span><span>${slot.minimum}</span></li>`);
+                }
+                day.setDate(day.getDate() + 1);
+            }
+            list.innerHTML = found.length
+                ? found.join('')
+                : '<li class="dispo-muted">Aucune date libre d’ici fin ' + monthNames[horizon.getMonth()] + '.</li>';
+        }
+
+        function renderDispoVerdict() {
+            const input = document.getElementById('dispo-date');
+            const box = document.getElementById('dispo-verdict');
+            box.className = '';
+            if (!input.value) {
+                box.innerHTML = '';
+                return;
+            }
+
+            const date = parseDateStr(input.value);
+            const weekday = date.getDay();
+            const label = formatDispoDate(date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const inCalendar = date <= dispoHorizon();
+            const blocking = inCalendar ? blockingJdrEvents(input.value) : [];
+            // Les créneaux de la Ligue Ludique ne bloquent pas une demande faite un jeudi ou un samedi
+            const others = blocking.filter(e => String(e.colorId) !== '11');
+            let state, html;
+
+            if (date < today) {
+                state = '';
+                html = `${label} est déjà passé.`;
+            } else if (weekday === 2) {
+                state = 'occupee';
+                html = `❌ ${label} : pas de créneau JDR le mardi.`;
+            } else if (weekday === 4 || weekday === 6) {
+                if (others.length) {
+                    state = 'occupee';
+                    html = `❌ ${label} : la salle est déjà prise (${others.map(e => e.title).join(', ')}).`;
+                } else {
+                    const oneMonthAhead = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
+                    state = 'demande';
+                    html = date >= oneMonthAhead
+                        ? `⏳ ${label} : le jeudi et le samedi sont réservés en priorité à la Ligue Ludique, mais tu t’y prends plus d’un mois à l’avance : demande-nous !`
+                        : `⏳ ${label} : le jeudi et le samedi sont réservés en priorité à la Ligue Ludique. Pour réserver l’un de ces jours, préviens-nous au moins 1 mois à l’avance.`;
+                }
+            } else if (!inCalendar) {
+                state = '';
+                html = `${label} n’est pas encore dans le calendrier : demande-nous !`;
+            } else if (blocking.length) {
+                state = 'occupee';
+                html = `❌ ${label} : la salle est déjà prise (${blocking.map(e => e.title).join(', ')}).`;
+            } else {
+                const slot = dispoSlots[weekday];
+                state = 'libre';
+                html = `✅ ${label} : la salle est libre ! ${slot.horaires} · minimum ${slot.minimum}.`;
+            }
+
+            box.className = state;
+            box.innerHTML = html;
+        }
+
+        function renderDispo() {
+            document.getElementById('dispo-date').min = toDateStr(new Date());
+            renderDispoNext();
+            renderDispoVerdict();
         }
 
         // Fonctions pour la modal d'événement
