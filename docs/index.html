@@ -485,6 +485,24 @@
             text-decoration: none;
         }
 
+        .insc-mail-menu {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+            padding: 8px;
+            background: var(--creme);
+            border-radius: 6px;
+        }
+
+        .insc-mail-menu[hidden] {
+            display: none;
+        }
+
+        .insc-mail-menu a {
+            text-decoration: none;
+        }
+
         .insc-aide {
             margin-top: 10px;
             font-size: 0.85em;
@@ -1524,9 +1542,17 @@
                 ? ['mail', 'discord', 'instagram']
                 : ['mail', 'discord', 'instagram', 'meetup', 'vibes'];
             const noms = { mail: '📧 Mail', discord: '💬 Discord', instagram: '📷 Instagram', meetup: '👥 Meetup', vibes: '🌈 Vibes' };
-            const boutons = canaux.map(c =>
-                `<a class="btn" id="insc-${c}" target="_blank" rel="noopener" onclick="onInscriptionCanal('${c}')">${noms[c]}</a>`
+            const boutons = canaux.map(c => c === 'mail'
+                ? `<button class="btn" type="button" id="insc-mail" aria-expanded="false" onclick="toggleMailMenu()">${noms.mail} ▾</button>`
+                : `<a class="btn" id="insc-${c}" target="_blank" rel="noopener" onclick="onInscriptionCanal('${c}')">${noms[c]}</a>`
             ).join('');
+            // Choix de l'outil de mail : Gmail et Outlook en ligne s'ouvrent toujours dans un nouvel onglet
+            const menuMail = `<div class="insc-mail-menu" id="insc-mail-menu" hidden>
+                    <a class="btn" id="insc-gmail" target="_blank" rel="noopener">Gmail</a>
+                    <a class="btn" id="insc-outlook" target="_blank" rel="noopener">Outlook</a>
+                    <a class="btn" id="insc-mailapp" target="_blank" rel="noopener">Application de mail</a>
+                    <button class="btn" type="button" onclick="copierAdresseMail()">Copier l’adresse</button>
+                </div>`;
 
             return `<div class="inscription">
                 <button class="btn btn-plein" onclick="toggleInscription()">${label}</button>
@@ -1537,6 +1563,7 @@
                     </div>
                     <div class="insc-apercu" id="insc-apercu"></div>
                     <div class="insc-canaux">${boutons}</div>
+                    ${menuMail}
                     <p class="insc-aide">Mail : le message est déjà rédigé. Pour les autres, il est copié : il ne reste qu’à le coller dans la conversation.</p>
                     <p class="insc-aide">Pas encore sur notre Discord ? <a href="${CONTACTS.discordInvite}" target="_blank" rel="noopener">Rejoindre le serveur</a></p>
                     <div class="insc-copie" id="insc-copie" aria-live="polite"></div>
@@ -1587,8 +1614,13 @@
             // Liens de l'événement s'ils sont dans la description, sinon liens généraux.
             // Instagram ouvre toujours la messagerie (la description donne en général le profil).
             const { event, canaux } = currentInscription;
+            const to = encodeURIComponent(CONTACTS.mail);
+            const su = encodeURIComponent(subject);
+            const bo = encodeURIComponent(body);
             const liens = {
-                mail: `mailto:${CONTACTS.mail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
+                gmail: `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${bo}`,
+                outlook: `https://outlook.live.com/mail/0/deeplink/compose?to=${to}&subject=${su}&body=${bo}`,
+                mailapp: `mailto:${CONTACTS.mail}?subject=${su}&body=${bo}`,
                 discord: canaux.discord || CONTACTS.discord[event.type],
                 instagram: CONTACTS.instagram,
                 meetup: canaux.meetup || CONTACTS.meetup,
@@ -1616,8 +1648,20 @@
             return ok || !!navigator.clipboard;
         }
 
+        function toggleMailMenu() {
+            const menu = document.getElementById('insc-mail-menu');
+            menu.hidden = !menu.hidden;
+            document.getElementById('insc-mail').setAttribute('aria-expanded', String(!menu.hidden));
+        }
+
+        function copierAdresseMail() {
+            const ok = copyText(CONTACTS.mail);
+            document.getElementById('insc-copie').textContent = ok
+                ? `✅ Adresse copiée (${CONTACTS.mail}). Pense à copier aussi le message ci-dessus.`
+                : `Copie impossible : notre adresse est ${CONTACTS.mail}`;
+        }
+
         function onInscriptionCanal(canal) {
-            if (canal === 'mail') return;
             const ok = copyText(buildInscriptionMessage().body);
             document.getElementById('insc-copie').textContent = ok
                 ? '✅ Message copié ! Colle-le dans la conversation.'
