@@ -1386,8 +1386,16 @@
 
             // La partie "---interne---" est déjà retirée par l'Apps Script
             const parsed = extractInscription(event.description || '');
-            let description = linkify(parsed.description);
+            let description = parsed.description;
             const inscription = parsed.inscription;
+            const mode = getInscriptionMode(event, inscription);
+
+            // Avec le bouton, les lignes « Vibes : <lien> »… passent dans le bouton
+            let canaux = {};
+            if (mode === 'inscription' || mode === 'reservation') {
+                ({ description, canaux } = extractCanaux(description));
+            }
+            description = linkify(description);
 
             // Formater la date et l'heure
             let dateTime = '';
@@ -1426,11 +1434,10 @@
                 content = '<p style="color: #999; font-style: italic;">Aucun détail disponible pour cet événement.</p>';
             }
 
-            const mode = getInscriptionMode(event, inscription);
             content += renderInscription(mode, inscription);
 
             modalBody.innerHTML = content;
-            currentInscription = { mode, event };
+            currentInscription = { mode, event, canaux };
             modal.classList.add('active');
         }
 
@@ -1480,6 +1487,21 @@
             const cleaned = description.replace(match[0], '')
                 .replace(/^(?:\s|<br\s*\/?>)+|(?:\s|<br\s*\/?>)+$/gi, '');
             return { description: cleaned, inscription };
+        }
+
+        // Lit les lignes « Vibes : <lien> », « Meetup : <lien> », « Discord : <lien> », « Instagram : <lien> »
+        // de la description et les retire du texte affiché (le bouton les reprend)
+        function extractCanaux(description) {
+            const canaux = {};
+            const re = /(^|\n|<br\s*\/?>|<p[^>]*>|<div[^>]*>)(?:<(?!br)[a-z][^>]*>\s*)*(vibes|meetup|discord|instagram)(?:\s|&nbsp;|<[^>]*>)*:([^\n]*?)(?=<br\s*\/?>|\n|<\/p>|<\/div>|$)/gi;
+            const cleaned = description.replace(re, (ligne, avant, canal, rest) => {
+                const url = rest.match(/https?:\/\/[^\s"'<>]+/);
+                if (!url) return ligne;
+                canaux[canal.toLowerCase()] = url[0].replace(/&amp;/g, '&');
+                // Retire aussi le saut de ligne qui précédait
+                return /^(\n|<br)/i.test(avant) ? '' : avant;
+            }).replace(/^(?:\s|<br\s*\/?>)+|(?:\s|<br\s*\/?>)+$/gi, '');
+            return { description: cleaned, canaux };
         }
 
         function getInscriptionMode(event, inscription) {
@@ -1562,12 +1584,15 @@
             document.getElementById('insc-apercu').textContent = body;
             document.getElementById('insc-copie').textContent = '';
 
+            // Liens de l'événement s'ils sont dans la description, sinon liens généraux.
+            // Instagram ouvre toujours la messagerie (la description donne en général le profil).
+            const { event, canaux } = currentInscription;
             const liens = {
                 mail: `mailto:${CONTACTS.mail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
-                discord: CONTACTS.discord[currentInscription.event.type],
+                discord: canaux.discord || CONTACTS.discord[event.type],
                 instagram: CONTACTS.instagram,
-                meetup: CONTACTS.meetup,
-                vibes: CONTACTS.vibes
+                meetup: canaux.meetup || CONTACTS.meetup,
+                vibes: canaux.vibes || CONTACTS.vibes
             };
             Object.entries(liens).forEach(([canal, url]) => {
                 const a = document.getElementById('insc-' + canal);
