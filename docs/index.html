@@ -1282,13 +1282,11 @@
         }
 
         // Recherche de dispo de la salle JDR
-        // Créneaux publics par jour de la semaine (0 = dimanche)
-        const dispoSlots = {
-            0: { horaires: '14h30 – fin de service', minimum: '80 €' },
-            1: { horaires: '17h30 – fin de service', minimum: '90 €' },
-            3: { horaires: '17h30 – fin de service', minimum: '90 €' },
-            5: { horaires: '17h30 – fin de service', minimum: '90 €' }
-        };
+        // Les créneaux ouverts à la réservation sont les « Créneau Libre » (Sauge) de l'agenda JDR
+        function dispoMinimum(d) {
+            return d.getDay() === 0 ? '80 €' : '90 €';
+        }
+
         const DISPO_NEXT_COUNT = 5;
 
         function toDateStr(d) {
@@ -1316,6 +1314,19 @@
             return allEvents.jdr.filter(e => e.date === dateStr && (couleurDe('jdr', e.colorId) || {}).salle !== 'libre');
         }
 
+        function creneauxLibres(dateStr) {
+            return allEvents.jdr.filter(e => e.date === dateStr && (couleurDe('jdr', e.colorId) || {}).salle === 'libre');
+        }
+
+        // Créneau réservable ce jour-là : un « Créneau Libre » et rien qui bloque la salle
+        function dispoCreneau(dateStr) {
+            const libre = creneauxLibres(dateStr)[0];
+            if (!libre || blockingJdrEvents(dateStr).length) return null;
+            const debut = new Date(libre.startDateTime || libre.date);
+            const heure = libre.isAllDay ? '' : debut.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h');
+            return { horaires: heure ? `${heure} – fin de service` : 'toute la journée', minimum: dispoMinimum(parseDateStr(dateStr)) };
+        }
+
         function renderDispoNext() {
             const list = document.getElementById('dispo-next');
             const horizon = dispoHorizon();
@@ -1323,8 +1334,8 @@
             day.setHours(0, 0, 0, 0);
             const found = [];
             while (day <= horizon && found.length < DISPO_NEXT_COUNT) {
-                const slot = dispoSlots[day.getDay()];
-                if (slot && blockingJdrEvents(toDateStr(day)).length === 0) {
+                const slot = dispoCreneau(toDateStr(day));
+                if (slot) {
                     found.push(`<li><span>${formatDispoDate(day)} · ${slot.horaires}</span><span>${slot.minimum}</span></li>`);
                 }
                 day.setDate(day.getDate() + 1);
@@ -1377,10 +1388,13 @@
             } else if (blocking.length) {
                 state = 'occupee';
                 html = `❌ ${label} : la salle est déjà prise (${blocking.map(e => e.title).join(', ')}).`;
-            } else {
-                const slot = dispoSlots[weekday];
+            } else if (dispoCreneau(input.value)) {
+                const slot = dispoCreneau(input.value);
                 state = 'libre';
                 html = `✅ ${label} : la salle est libre ! ${slot.horaires} · minimum ${slot.minimum}.`;
+            } else {
+                state = 'occupee';
+                html = `❌ ${label} : pas de créneau ouvert à la réservation ce jour-là.`;
             }
 
             box.className = state;
