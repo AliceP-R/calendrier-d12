@@ -330,6 +330,24 @@
             background: #f7f2ea;
         }
 
+        /* Date du jour */
+        .calendar td.day-today {
+            background: #fdf1e6;
+            box-shadow: inset 0 0 0 2px var(--orange);
+        }
+
+        .day-today .day-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 1.8em;
+            height: 1.8em;
+            padding: 0 4px;
+            border-radius: 999px;
+            background: var(--orange);
+            color: white;
+        }
+
         .events-container {
             font-size: 0.85em;
             max-height: 100px;
@@ -1042,7 +1060,8 @@
                         html += '<td class="day-other-month"><div class="day-number"></div></td>';
                         continue;
                     }
-                    html += `<td><div class="day-number">${n}</div><div class="events-container">`;
+                    const isToday = viewOffset === 0 && n === today.getDate();
+                    html += `<td${isToday ? ' class="day-today" aria-current="date"' : ''}><div class="day-number">${n}</div><div class="events-container">`;
                     // Faux évènements répartis de façon déterministe
                     const count = (n * 7 + day) % 3;
                     for (let i = 0; i < count; i++) {
@@ -1250,7 +1269,8 @@
                         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayCounter).padStart(2, '0')}`;
                         const dayEvents = getEventsForDate(dateStr);
 
-                        html += `<td>`;
+                        const isToday = dateStr === toDateStr(new Date());
+                        html += isToday ? `<td class="day-today" aria-current="date">` : `<td>`;
                         const jdsCount = dayEvents.filter(e => e.type === 'jds').length;
                         const jdrCount = dayEvents.filter(e => e.type === 'jdr').length;
                         let counts = '';
