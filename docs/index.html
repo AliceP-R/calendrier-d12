@@ -439,6 +439,13 @@
             margin-top: 0;
         }
 
+        /* Phrase de l'étiquette, sous la description */
+        .phrase {
+            margin-top: 8px;
+            padding-left: 10px;
+            border-left: 3px solid var(--creme-fonce);
+        }
+
         /* Demande d'inscription / de réservation dans la modale */
         .inscription {
             margin-top: 20px;
@@ -501,6 +508,16 @@
 
         .insc-canaux a {
             text-decoration: none;
+        }
+
+        /* Boutons d'envoi grisés tant que le prénom est vide */
+        .insc-canaux .btn:disabled,
+        .insc-canaux a.btn:not([href]),
+        .insc-mail-menu a.btn:not([href]) {
+            opacity: 0.45;
+            cursor: not-allowed;
+            background: white;
+            color: var(--vert);
         }
 
         .insc-mail-menu {
@@ -871,7 +888,7 @@
                 <div class="infos-grid">
                     <div class="info-card">
                         <h3>🎯 Jeux de société</h3>
-                        <p>Tu t’inscris (<a href="https://discord.gg/UXwSRqtycS" target="_blank" rel="noopener">Discord</a>, <a href="https://www.instagram.com/aude12.paris/" target="_blank" rel="noopener">Instagram</a>, <a href="https://www.meetup.com/fr-FR/soiree-tables-ouvertes-a-theme-du-de-12/" target="_blank" rel="noopener">MeetUp</a>, <a href="https://vibes.lgbt/group/au-de-12-bar-a-jeux-de-societe-20260202160712" target="_blank" rel="noopener">Vibes</a> ou <a href="mailto:contact@au-de12paris.com" target="_blank" rel="noopener">mail</a>), tu viens et tu te laisses guider. On s'occupe de tout !</p>
+                        <p>Tu t’inscris (<a data-lien="discord_invitation" target="_blank" rel="noopener">Discord</a>, <a data-lien="instagram" target="_blank" rel="noopener">Instagram</a>, <a data-lien="meetup" target="_blank" rel="noopener">MeetUp</a>, <a data-lien="vibes" target="_blank" rel="noopener">Vibes</a> ou <a data-lien="mail" target="_blank" rel="noopener">mail</a>), tu viens et tu te laisses guider. On s'occupe de tout !</p>
                         <p>Les soirées jeux de société fonctionnent de <strong>deux façons</strong> :</p>
                         <ul>
                             <li><strong>Fonctionnement normal du bar</strong> : tu consommes comme d'habitude.</li>
@@ -890,7 +907,7 @@
                             <p>Le jeudi et le samedi sont en priorité réservés à la Ligue Ludique. Pour réserver un jeudi ou un samedi, préviens-nous au moins <strong>1 mois à l'avance</strong>.</p>
                             <div class="notice">
                                 <p>⚠️ <strong>Pour réserver la salle JDR, ne passe pas par le système de réservation.</strong></p>
-                                <p>Envoie-nous simplement un message sur <a href="https://discord.gg/UXwSRqtycS" target="_blank" rel="noopener">Discord</a>, <a href="https://www.instagram.com/aude12.paris/" target="_blank" rel="noopener">Instagram</a> ou par <a href="mailto:contact@au-de12paris.com" target="_blank" rel="noopener">mail</a>.</p>
+                                <p>Envoie-nous simplement un message sur <a data-lien="discord_invitation" target="_blank" rel="noopener">Discord</a>, <a data-lien="instagram" target="_blank" rel="noopener">Instagram</a> ou par <a data-lien="mail" target="_blank" rel="noopener">mail</a>.</p>
                             </div>
                             <p>La salle fonctionne avec un minimum de commande à atteindre sur la table :</p>
                             <table>
@@ -950,39 +967,48 @@
         // URL du Google Apps Script déployé (depuis config.js)
         const API_URL = API_CONFIG.apiUrl;
 
-        // Couleurs Google Agenda : un tableau par calendrier, car une même couleur
-        // n'a pas le même sens en JDS et en JDR.
-        //   nom    : libellé de la légende
-        //   teinte : couleur affichée
-        //   bouton : 'inscription' (« Demander à m'inscrire »), 'reservation' (« Demander à réserver la salle ») ou null (aucun)
-        //   salle  : JDR uniquement, effet sur la disponibilité de la salle :
-        //            'bloque', 'libre' (ne bloque pas) ou 'ligue' (ne bloque pas une demande un jeudi/samedi)
-        const COULEURS = {
-          jds: {
-            '3': { nom: 'Soirée BOTC',       teinte: '#8E24AA', bouton: 'inscription' }, // Raisin
-            '5': { nom: 'Tables Ouvertes',   teinte: '#F6BF26', bouton: 'inscription' }, // Banane
-            '7': { nom: 'Soirée Découverte', teinte: '#039BE5', bouton: 'inscription' }, // Paon
-            '9': { nom: 'Évènement externe', teinte: '#3F51B5', bouton: null }           // Myrtille
-          },
-          jdr: {
-            '2':  { nom: 'Réservation Client',                     teinte: '#C0CA33', bouton: null,          salle: 'bloque' }, // Avocat
-            '3':  { nom: 'Créneau Libre',                          teinte: '#33B679', bouton: 'reservation', salle: 'libre' },  // Sauge
-            '4':  { nom: 'MJ PRO - Vadrouilles & Magie',           teinte: '#D50000', bouton: 'inscription', salle: 'bloque' }, // Tomate
-            '5':  { nom: 'OS & Initiation',                        teinte: '#4285F4', bouton: 'inscription', salle: 'bloque' }, // Cobalt
-            '8':  { nom: 'MJ PRO - Campagne Semi-Ouverte',         teinte: '#616161', bouton: null,          salle: 'bloque' }, // Graphite
-            '9':  { nom: 'Évènement externe',                      teinte: '#3F51B5', bouton: null,          salle: 'bloque' }, // Myrtille
-            '11': { nom: 'Créneau prioritaire à la Ligue Ludique', teinte: '#E67C73', bouton: null,          salle: 'ligue' }   // Flamant rose
-          }
-        };
+        // Configuration lue dans le Google Sheet « Calendrier d12 - config » et envoyée par l'Apps Script :
+        //   couleurs.jds / couleurs.jdr : une entrée par ID d'étiquette (onglet Couleurs)
+        //     { nom, teinte, salle ('bloque' | 'libre' | 'ligue', JDR uniquement), phrase,
+        //       bouton: null | { type: 'externe', texte } | { type: 'demande', texte, objet, message, canaux } }
+        //   liens : onglet Liens (mail, instagram, meetup, vibes, discord_invitation, discord_jds, discord_jdr)
+        // Gardée dans le navigateur pour afficher la légende sans attendre au prochain passage.
+        let CONFIG = chargerConfigLocale();
 
-        // Entrée du tableau pour un événement (undefined si sans couleur ou couleur inconnue)
-        function couleurDe(calendarType, colorId) {
-          return (COULEURS[calendarType] || {})[String(colorId)];
+        function chargerConfigLocale() {
+            try {
+                return JSON.parse(localStorage.getItem('configD12')) || null;
+            } catch (e) {
+                return null;
+            }
         }
 
-        function getEventColor(colorId, calendarType) {
-          const couleur = couleurDe(calendarType, colorId);
-          return couleur ? couleur.teinte : '#D2691E'; // Couleur par défaut si pas de couleur
+        function enregistrerConfigLocale(config) {
+            try {
+                localStorage.setItem('configD12', JSON.stringify(config));
+            } catch (e) {}
+        }
+
+        // Entrée de l'onglet Couleurs pour un évènement (undefined si sans couleur ou couleur inconnue)
+        function couleurDe(calendarType, colorId) {
+            return CONFIG ? (CONFIG.couleurs[calendarType] || {})[String(colorId)] : undefined;
+        }
+
+        function lien(cle) {
+            return CONFIG ? CONFIG.liens[cle] || '' : '';
+        }
+
+        function escapeHtml(text) {
+            return String(text).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+        }
+
+        // Liens de la section « Comment participer » (attribut data-lien)
+        function renderLiensStatiques() {
+            document.querySelectorAll('a[data-lien]').forEach(a => {
+                const valeur = lien(a.dataset.lien);
+                if (!valeur) return a.removeAttribute('href');
+                a.href = a.dataset.lien === 'mail' ? 'mailto:' + valeur : valeur;
+            });
         }
 
         // Texte foncé sur les teintes claires (Banane, Avocat…), blanc sur les autres
@@ -998,10 +1024,11 @@
             updateCalendarDisplay();
         }
 
-        // Catégories cochées qui s'appliquent à la vue courante
+        // Catégories cochées (et toujours dans le Sheet) qui s'appliquent à la vue courante
         function getActiveColorFilters() {
             return Object.keys(selectedColorFilters).filter(key =>
-                selectedColorFilters[key] && (currentFilter === 'all' || key.startsWith(currentFilter + '_'))
+                selectedColorFilters[key] && couleurDe(...key.split('_')) &&
+                (currentFilter === 'all' || key.startsWith(currentFilter + '_'))
             );
         }
 
@@ -1021,9 +1048,9 @@
             const type = params.get('type');
             if (type === 'jds' || type === 'jdr') currentFilter = type;
 
+            // La configuration peut ne pas être encore chargée : les catégories inconnues sont ignorées à l'affichage
             (params.get('cat') || '').split(',').forEach(key => {
-                const [calType, colorId] = key.split('_');
-                if (couleurDe(calType, colorId)) selectedColorFilters[key] = true;
+                if (/^(jds|jdr)_\w+$/.test(key)) selectedColorFilters[key] = true;
             });
 
             document.querySelectorAll('.controls .btn[data-filter]').forEach(btn => {
@@ -1076,68 +1103,67 @@
         }
 
         // silent : rafraîchissement automatique, on garde le calendrier affiché
-        function loadEvents(silent = false) {
-            const container = document.getElementById('calendar-container');
-            const syncStatus = document.getElementById('sync-status');
+        let eventsLoaded = false;
 
-            try {
-                if (!silent) {
-                    syncStatus.textContent = 'Chargement des données...';
-                    container.innerHTML = renderCalendarSkeleton();
+        function loadEvents(silent = false) {
+            if (!silent) {
+                document.getElementById('sync-status').textContent = 'Chargement des données...';
+                document.getElementById('calendar-container').innerHTML = renderCalendarSkeleton();
+            }
+
+            // JSONP : l'Apps Script appelle la fonction dont on lui donne le nom
+            const callbackName = 'calendarCallback_' + Date.now();
+            const script = document.createElement('script');
+            const cleanup = () => {
+                delete window[callbackName];
+                script.remove();
+            };
+
+            window[callbackName] = function(data) {
+                cleanup();
+                if (data.error || !data.config) {
+                    showLoadError(data.error || 'configuration absente');
+                    return;
                 }
 
-                // JSONP for CORS
-                const callbackName = 'calendarCallback_' + Date.now();
-                window[callbackName] = function(data) {
-                    if (data.error) {
-                        throw new Error(data.error);
-                    }
+                CONFIG = data.config;
+                enregistrerConfigLocale(CONFIG);
 
-                    // Transformer les événements en format utilisable
-                    allEvents.jds = (data.jds || []).map(e => ({
-                        ...e,
-                        type: 'jds',
-                        date: e.startDate
-                    }));
+                // Le serveur ne renvoie déjà que les étiquettes connues ; on revérifie par sécurité
+                ['jds', 'jdr'].forEach(type => {
+                    allEvents[type] = (data[type] || [])
+                        .map(e => ({ ...e, type, date: e.startDate }))
+                        .filter(e => couleurDe(type, e.colorId));
+                });
 
-                    allEvents.jdr = (data.jdr || []).map(e => ({
-                        ...e,
-                        type: 'jdr',
-                        date: e.startDate
-                    }));
+                eventsLoaded = true;
+                document.getElementById('sync-status').textContent = `Mis à jour le ${new Date(data.generated).toLocaleString('fr-FR')}`;
+                renderLiensStatiques();
+                updateCalendarDisplay();
+                renderDispo();
+            };
 
-                    syncStatus.textContent = `Mis à jour le ${new Date(data.generated).toLocaleString('fr-FR')}`;
-                    updateCalendarDisplay();
-                    renderDispo();
+            script.src = API_URL + '?callback=' + callbackName;
+            script.onerror = function() {
+                cleanup();
+                showLoadError('impossible de joindre Google Apps Script');
+            };
+            document.head.appendChild(script);
+        }
 
-                    // Clean up
-                    delete window[callbackName];
-                };
-
-                // Create script tag for JSONP
-                const script = document.createElement('script');
-                script.src = API_URL + '?callback=' + callbackName;
-                script.onerror = function() {
-                    delete window[callbackName];
-                    console.error('Erreur de chargement');
-                    syncStatus.textContent = '❌ Erreur de chargement';
-                    container.innerHTML = `<div class="error-box">
-                        <strong>Erreur de chargement des événements:</strong><br>
-                        Impossible de se connecter à l'API Google Apps Script<br><br>
-                        <small>Assurez-vous que l'URL est correctement configurée.</small>
-                    </div>`;
-                };
-                document.head.appendChild(script);
-
-            } catch (error) {
-                console.error('Erreur:', error);
-                syncStatus.textContent = '❌ Erreur de chargement';
-                container.innerHTML = `<div class="error-box">
-                    <strong>Erreur de chargement des événements:</strong><br>
-                    ${error.message}<br><br>
-                    <small>Assurez-vous que l'URL de l'API Google Apps Script est correctement configurée dans le code HTML.</small>
-                </div>`;
+        // Si des évènements sont déjà affichés, on les garde et on le signale discrètement
+        function showLoadError(message) {
+            console.error('Erreur de chargement :', message);
+            const syncStatus = document.getElementById('sync-status');
+            if (eventsLoaded) {
+                syncStatus.textContent = '⚠️ Mise à jour impossible, nouvel essai dans une minute';
+                return;
             }
+            syncStatus.textContent = '❌ Erreur de chargement';
+            document.getElementById('calendar-container').innerHTML = `<div class="error-box">
+                <strong>Le calendrier n'a pas pu être chargé.</strong><br>
+                Réessaie dans quelques minutes. Nouvel essai automatique toutes les minutes.
+            </div>`;
         }
 
         function getMonthCalendar(year, month) {
@@ -1174,7 +1200,7 @@
         }
 
         function formatEventDisplay(event) {
-            let display = event.title;
+            let display = escapeHtml(event.title);
             if (event.startDateTime && !event.isAllDay) {
                 const time = new Date(event.startDateTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
                 display += `<br><small>${time}</small>`;
@@ -1184,13 +1210,13 @@
 
         function renderLegendSection(title, type, visible) {
             let html = `<div class="section${visible ? '' : ' is-hidden'}"><h4>${title}</h4>`;
-            Object.entries(COULEURS[type]).forEach(([colorId, couleur]) => {
+            Object.entries(CONFIG ? CONFIG.couleurs[type] : {}).forEach(([colorId, couleur]) => {
                 const filterKey = `${type}_${colorId}`;
                 const isChecked = selectedColorFilters[filterKey] || false;
                 html += `<label class="color-filter-checkbox">
                     <input type="checkbox" value="${filterKey}" ${isChecked ? 'checked' : ''} onchange="updateColorFilter(this)">
                     <span class="legend-color" style="background-color: ${couleur.teinte};"></span>
-                    <span>${couleur.nom}</span>
+                    <span>${escapeHtml(couleur.nom)}</span>
                 </label>`;
             });
             return html + '</div>';
@@ -1283,9 +1309,8 @@
                         html += `<div class="events-container">`;
 
                         dayEvents.forEach(event => {
-                            const bgColor = getEventColor(event.colorId, event.type);
-                            const eventJson = JSON.stringify(event).replace(/"/g, '&quot;');
-                            html += `<div class="event" style="background-color: ${bgColor}; color: ${getTextColor(bgColor)};" onclick="openEventModal(${eventJson})">${formatEventDisplay(event)}</div>`;
+                            const bgColor = couleurDe(event.type, event.colorId).teinte;
+                            html += `<div class="event" style="background-color: ${bgColor}; color: ${getTextColor(bgColor)};" data-type="${event.type}" data-id="${escapeHtml(event.id)}" onclick="openEventModal(this.dataset.type, this.dataset.id)">${formatEventDisplay(event)}</div>`;
                         });
 
                         html += `</div></td>`;
@@ -1311,7 +1336,7 @@
         }
 
         // Recherche de dispo de la salle JDR
-        // Les créneaux ouverts à la réservation sont les « Créneau Libre » (Sauge) de l'agenda JDR
+        // Les créneaux ouverts à la réservation sont les étiquettes JDR dont la colonne Salle vaut « libre »
         function dispoMinimum(d) {
             return d.getDay() === 0 ? '80 €' : '90 €';
         }
@@ -1339,7 +1364,7 @@
         }
 
         function blockingJdrEvents(dateStr) {
-            // Un événement sans couleur bloque la salle
+            // Seuls les évènements dont l'étiquette est dans le Sheet arrivent jusqu'ici
             return allEvents.jdr.filter(e => e.date === dateStr && (couleurDe('jdr', e.colorId) || {}).salle !== 'libre');
         }
 
@@ -1436,84 +1461,55 @@
             renderDispoVerdict();
         }
 
-        // Fonctions pour la modal d'événement
-        function openEventModal(event) {
-            const modal = document.getElementById('eventModal');
-            const modalTitle = document.getElementById('modalTitle');
-            const modalBody = document.getElementById('modalBody');
+        // Fenêtre de détail d'un évènement
+        // Ordre : titre, date et heure, description, phrase de l'étiquette, lieu, type, bouton
+        function openEventModal(type, id) {
+            const event = allEvents[type].find(e => e.id === id);
+            if (!event) return;
+            const couleur = couleurDe(event.type, event.colorId);
 
-            // Formater le titre avec l'événement
-            modalTitle.textContent = event.title || 'Détails de l\'événement';
+            document.getElementById('modalTitle').textContent = event.title || 'Détails de l’évènement';
 
-            // La partie "---interne---" est déjà retirée par l'Apps Script
-            const parsed = extractInscription(event.description || '');
-            let description = parsed.description;
-            const inscription = parsed.inscription;
-            const mode = getInscriptionMode(event, inscription);
+            // La partie ---interne--- est déjà retirée par l'Apps Script.
+            // Les lignes « Vibes : », « Meetup : », « Inscription : » passent dans les boutons.
+            const { description, liens } = extractLiens(event.description || '');
 
-            // Avec le bouton, les lignes « Vibes : <lien> »… passent dans le bouton
-            let canaux = {};
-            if (mode === 'inscription' || mode === 'reservation') {
-                ({ description, canaux } = extractCanaux(description));
-            }
-            description = linkify(description);
+            let content = `<h3>📅 Date et heure</h3><p>${formatEventDateTime(event)}</p>`;
 
-            // Formater la date et l'heure
-            let dateTime = '';
-            if (event.startDateTime) {
-                const date = new Date(event.startDateTime);
-                const dateStr = date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                const timeStr = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                dateTime = `${dateStr} à ${timeStr}`;
-            } else if (event.date) {
-                const date = new Date(event.date);
-                dateTime = date.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            }
-
-            // Construire le contenu de la modal
-            let content = '';
-
-            if (dateTime) {
-                content += `<h3>📅 Date et heure</h3><p>${dateTime}</p>`;
-            }
-
-            if (description) {
-                content += `<h3>📝 Description</h3><p style="white-space: pre-wrap;">${description}</p>`;
+            if (description || couleur.phrase) {
+                content += '<h3>📝 Description</h3>';
+                if (description) content += `<p style="white-space: pre-wrap;">${linkify(description)}</p>`;
+                if (couleur.phrase) content += `<p class="phrase">${linkify(escapeHtml(couleur.phrase))}</p>`;
             }
 
             if (event.location) {
-                content += `<h3>📍 Lieu</h3><p>${event.location}</p>`;
+                content += `<h3>📍 Lieu</h3><p>${escapeHtml(event.location)}</p>`;
             }
 
-            // Type d'événement
-            if (event.type) {
-                const typeDisplay = event.type === 'jds' ? '🎯 Jeux de société' : '⚔️ Jeux de rôle';
-                content += `<h3>Type</h3><p>${typeDisplay}</p>`;
-            }
+            content += `<h3>Type</h3><p>${event.type === 'jds' ? '🎯 Jeux de société' : '⚔️ Jeux de rôle'}</p>`;
 
-            if (!content) {
-                content = '<p style="color: #999; font-style: italic;">Aucun détail disponible pour cet événement.</p>';
-            }
+            const bouton = getBouton(event, couleur, liens);
+            content += renderBouton(bouton);
 
-            content += renderInscription(mode, inscription);
-
-            modalBody.innerHTML = content;
-            currentInscription = { mode, event, canaux };
-            modal.classList.add('active');
+            document.getElementById('modalBody').innerHTML = content;
+            currentInscription = { event, bouton, liens };
+            document.getElementById('eventModal').classList.add('active');
         }
 
-        // Contacts pour les demandes d'inscription
-        const CONTACTS = {
-            mail: 'contact@au-de12paris.com',
-            instagram: 'https://ig.me/m/aude12.paris',
-            meetup: 'https://www.meetup.com/fr-FR/soiree-tables-ouvertes-a-theme-du-de-12/',
-            vibes: 'https://vibes.lgbt/group/au-de-12-bar-a-jeux-de-societe-20260202160712',
-            discordInvite: 'https://discord.gg/UXwSRqtycS',
-            discord: {
-                jds: 'https://discord.com/channels/1429535283506053232/1468199387728707656',
-                jdr: 'https://discord.com/channels/1429535283506053232/1429551352765485106'
-            }
-        };
+        // Date d'un évènement : les évènements « toute la journée » n'ont pas d'heure
+        function eventStart(event) {
+            return event.isAllDay ? parseDateStr(event.date) : new Date(event.startDateTime);
+        }
+
+        function formatHeure(d) {
+            return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h');
+        }
+
+        function formatEventDateTime(event) {
+            const start = eventStart(event);
+            const jour = start.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            return event.isAllDay ? `${jour}, toute la journée` : `${jour} à ${formatHeure(start)}`;
+        }
 
         let currentInscription = null;
 
@@ -1530,85 +1526,73 @@
             }).join('');
         }
 
-        // Lit la ligne « Inscription : <lien> » ou « Inscription : aucune » de la description
-        // (Google Agenda peut l'entourer de balises HTML) et la retire du texte affiché
-        function extractInscription(description) {
-            const re = /(?:<(?!br)[a-z][^>]*>\s*)*inscription(?:\s|&nbsp;|<[^>]*>)*:([\s\S]*?)(?=<br\s*\/?>|\n|<\/p>|<\/div>|$)/i;
-            const match = description.match(re);
-            if (!match) return { description, inscription: null };
-
-            const rest = match[1];
-            const url = rest.match(/https?:\/\/[^\s"'<>]+/);
-            const text = rest.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
-            let inscription = null;
-            if (url) inscription = { url: url[0].replace(/&amp;/g, '&') };
-            else if (/^aucune/i.test(text)) inscription = { none: true };
-            else return { description, inscription: null };
-
-            const cleaned = description.replace(match[0], '')
-                .replace(/^(?:\s|<br\s*\/?>)+|(?:\s|<br\s*\/?>)+$/gi, '');
-            return { description: cleaned, inscription };
-        }
-
-        // Lit les lignes « Vibes : <lien> », « Meetup : <lien> », « Discord : <lien> », « Instagram : <lien> »
-        // de la description et les retire du texte affiché (le bouton les reprend)
-        function extractCanaux(description) {
-            const canaux = {};
-            const re = /(^|\n|<br\s*\/?>|<p[^>]*>|<div[^>]*>)(?:<(?!br)[a-z][^>]*>\s*)*(vibes|meetup|discord|instagram)(?:\s|&nbsp;|<[^>]*>)*:([^\n]*?)(?=<br\s*\/?>|\n|<\/p>|<\/div>|$)/gi;
-            const cleaned = description.replace(re, (ligne, avant, canal, rest) => {
+        // Lit les lignes « Vibes : <lien> », « Meetup : <lien> », « Inscription : <lien> » de la description
+        // (Google Agenda peut les entourer de balises HTML) et les retire du texte affiché.
+        // Une ligne sans lien (« Inscription : aucune »…) reste affichée telle quelle.
+        function extractLiens(description) {
+            const liens = {};
+            const re = /(^|\n|<br\s*\/?>|<p[^>]*>|<div[^>]*>)(?:<(?!br)[a-z][^>]*>\s*)*(vibes|meetup|inscription)(?:\s|&nbsp;|<[^>]*>)*:([^\n]*?)(?=<br\s*\/?>|\n|<\/p>|<\/div>|$)/gi;
+            const cleaned = description.replace(re, (ligne, avant, nom, rest) => {
                 const url = rest.match(/https?:\/\/[^\s"'<>]+/);
                 if (!url) return ligne;
-                canaux[canal.toLowerCase()] = url[0].replace(/&amp;/g, '&');
+                liens[nom.toLowerCase()] = url[0].replace(/&amp;/g, '&');
                 // Retire aussi le saut de ligne qui précédait
                 return /^(\n|<br)/i.test(avant) ? '' : avant;
             }).replace(/^(?:\s|<br\s*\/?>)+|(?:\s|<br\s*\/?>)+$/gi, '');
-            return { description: cleaned, canaux };
+            return { description: cleaned, liens };
         }
 
-        function getInscriptionMode(event, inscription) {
-            const end = new Date(event.endDateTime || event.startDateTime || event.date);
+        // Bouton de l'étiquette (onglet Couleurs), sauf évènement passé ou « Complet » dans le titre.
+        // Un bouton « lien externe » n'apparaît que si la description contient une ligne « Inscription : <lien> ».
+        function getBouton(event, couleur, liens) {
+            const bouton = couleur.bouton;
+            if (!bouton) return null;
+            const end = new Date(event.endDateTime || event.startDateTime);
             if (end < new Date()) return null;
-            if (inscription) return inscription.url ? 'externe' : null;
-            // Sans couleur : pas de bouton (réservations privées, privatisations…)
-            const couleur = couleurDe(event.type, event.colorId);
-            return couleur ? couleur.bouton : null;
+            if (/\bcompl[eè]te?s?\b/i.test(event.title)) return null;
+            if (bouton.type === 'externe') return liens.inscription ? { ...bouton, url: liens.inscription } : null;
+            return bouton;
         }
 
-        function renderInscription(mode, inscription) {
-            if (!mode) return '';
-            if (mode === 'externe') {
-                return `<div class="inscription"><a class="btn btn-plein" href="${inscription.url}" target="_blank" rel="noopener">✋ S'inscrire sur le site de l'organisateur</a></div>`;
+        const NOMS_CANAUX = { mail: '📧 Mail', discord: '💬 Discord', instagram: '📷 Instagram', meetup: '👥 Meetup', vibes: '🌈 Vibes' };
+
+        function renderBouton(bouton) {
+            if (!bouton) return '';
+            if (bouton.type === 'externe') {
+                return `<div class="inscription"><a class="btn btn-plein" href="${escapeHtml(bouton.url)}" target="_blank" rel="noopener">${escapeHtml(bouton.texte)}</a></div>`;
             }
 
-            const label = mode === 'reservation' ? '🔑 Demander à réserver la salle' : '✋ Demander à m’inscrire';
-            const canaux = mode === 'reservation'
-                ? ['mail', 'discord', 'instagram']
-                : ['mail', 'discord', 'instagram', 'meetup', 'vibes'];
-            const noms = { mail: '📧 Mail', discord: '💬 Discord', instagram: '📷 Instagram', meetup: '👥 Meetup', vibes: '🌈 Vibes' };
-            const boutons = canaux.map(c => c === 'mail'
-                ? `<button class="btn" type="button" id="insc-mail" aria-expanded="false" onclick="toggleMailMenu()">${noms.mail} ▾</button>`
-                : `<a class="btn" id="insc-${c}" target="_blank" rel="noopener" onclick="onInscriptionCanal('${c}')">${noms[c]}</a>`
+            const boutons = bouton.canaux.map(c => c === 'mail'
+                ? `<button class="btn" type="button" id="insc-mail" aria-expanded="false" onclick="toggleMailMenu()">${NOMS_CANAUX.mail} ▾</button>`
+                : `<a class="btn" id="insc-${c}" target="_blank" rel="noopener" onclick="onInscriptionCanal()">${NOMS_CANAUX[c]}</a>`
             ).join('');
             // Choix de l'outil de mail : Gmail et Outlook en ligne s'ouvrent toujours dans un nouvel onglet
-            const menuMail = `<div class="insc-mail-menu" id="insc-mail-menu" hidden>
+            const menuMail = bouton.canaux.includes('mail') ? `<div class="insc-mail-menu" id="insc-mail-menu" hidden>
                     <a class="btn" id="insc-gmail" target="_blank" rel="noopener">Gmail</a>
                     <a class="btn" id="insc-outlook" target="_blank" rel="noopener">Outlook</a>
                     <a class="btn" id="insc-mailapp" target="_blank" rel="noopener">Application de mail</a>
                     <button class="btn" type="button" onclick="copierAdresseMail()">Copier l’adresse</button>
-                </div>`;
+                </div>` : '';
+            const aideCopie = bouton.canaux.some(c => c !== 'mail')
+                ? '<p class="insc-aide">Mail : le message est déjà rédigé. Pour les autres, il est copié : il ne reste qu’à le coller dans la conversation.</p>'
+                : '';
+            const aideDiscord = bouton.canaux.includes('discord') && lien('discord_invitation')
+                ? `<p class="insc-aide">Pas encore sur notre Discord ? <a href="${escapeHtml(lien('discord_invitation'))}" target="_blank" rel="noopener">Rejoindre le serveur</a></p>`
+                : '';
 
             return `<div class="inscription">
-                <button class="btn btn-plein" onclick="toggleInscription()">${label}</button>
+                <button class="btn btn-plein" onclick="toggleInscription()">${escapeHtml(bouton.texte)}</button>
                 <div class="insc-form" id="insc-form" hidden>
                     <div class="insc-champs">
-                        <label>Prénom<input type="text" id="insc-prenom" autocomplete="given-name" oninput="updateInscription()"></label>
+                        <label>Prénom<input type="text" id="insc-prenom" autocomplete="given-name" required oninput="updateInscription()"></label>
                         <label>Nombre de personnes<input type="number" id="insc-nombre" min="1" value="1" oninput="updateInscription()"></label>
                     </div>
                     <div class="insc-apercu" id="insc-apercu"></div>
+                    <p class="insc-aide" id="insc-prenom-aide">✏️ Indique ton prénom pour pouvoir envoyer ta demande.</p>
                     <div class="insc-canaux">${boutons}</div>
                     ${menuMail}
-                    <p class="insc-aide">Mail : le message est déjà rédigé. Pour les autres, il est copié : il ne reste qu’à le coller dans la conversation.</p>
-                    <p class="insc-aide">Pas encore sur notre Discord ? <a href="${CONTACTS.discordInvite}" target="_blank" rel="noopener">Rejoindre le serveur</a></p>
+                    ${aideCopie}
+                    ${aideDiscord}
                     <div class="insc-copie" id="insc-copie" aria-live="polite"></div>
                 </div>
             </div>`;
@@ -1623,56 +1607,75 @@
             }
         }
 
-        function buildInscriptionMessage() {
-            const { mode, event } = currentInscription;
-            const prenom = document.getElementById('insc-prenom').value.trim();
-            const nombre = Math.max(1, parseInt(document.getElementById('insc-nombre').value, 10) || 1);
-            const personnes = `${nombre} personne${nombre > 1 ? 's' : ''}`;
-
-            const start = new Date(event.startDateTime || event.date);
-            const jour = start.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-            const jourCourt = start.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-            const heure = d => d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h');
-
-            let body, subject;
-            if (mode === 'reservation') {
-                const horaire = event.isAllDay || !event.endDateTime ? '' : ` (de ${heure(start)} à ${heure(new Date(event.endDateTime))})`;
-                body = `Bonjour ! Je souhaiterais réserver la salle JDR le ${jour}${horaire} pour ${personnes}.`;
-                subject = `Demande de réservation de la salle JDR – ${jourCourt}`;
-            } else {
-                const horaire = event.isAllDay || !event.startDateTime ? '' : ` à ${heure(start)}`;
-                body = `Bonjour ! Je souhaiterais m’inscrire à « ${event.title} » le ${jour}${horaire} pour ${personnes}.`;
-                subject = `Demande d’inscription – ${event.title} – ${jourCourt}`;
-            }
-            if (prenom) body += ` Prénom : ${prenom}.`;
-            body += ' Merci !';
-            return { body, subject };
+        // Remplace {titre} {jour} {date} {heure} {horaire} {personnes} dans un modèle du Sheet.
+        // Sans heure (évènement « toute la journée »), « à {heure} » disparaît et {horaire} devient « toute la journée ».
+        function remplirModele(modele, vars) {
+            if (!vars.heure) modele = modele.replace(/\s+à\s+\{heure\}/g, '');
+            return modele
+                .replace(/\{(\w+)\}/g, (tout, nom) => nom in vars ? vars[nom] : tout)
+                .replace(/\s{2,}/g, ' ')
+                .replace(/\s+([.,])/g, '$1')
+                .trim();
         }
 
+        function buildInscriptionMessage() {
+            const { event, bouton } = currentInscription;
+            const prenom = document.getElementById('insc-prenom').value.trim();
+            const nombre = Math.max(1, parseInt(document.getElementById('insc-nombre').value, 10) || 1);
+            const start = eventStart(event);
+            const vars = {
+                titre: event.title,
+                jour: start.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+                date: start.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+                heure: event.isAllDay ? '' : formatHeure(start),
+                horaire: event.isAllDay ? 'toute la journée' : `de ${formatHeure(start)} à ${formatHeure(new Date(event.endDateTime))}`,
+                personnes: `${nombre} personne${nombre > 1 ? 's' : ''}`
+            };
+
+            let body = 'Bonjour ! ' + remplirModele(bouton.message, vars);
+            if (prenom) body += ` Prénom : ${prenom}.`;
+            body += ' Merci !';
+            return { body: body.replace(/\s{2,}/g, ' '), subject: remplirModele(bouton.objet, vars), prenom };
+        }
+
+        // Liens des canaux : ceux de l'évènement (lignes Vibes / Meetup de la description), sinon ceux de l'onglet Liens.
+        // Tant que le prénom est vide, les boutons d'envoi restent grisés (lien retiré).
         function updateInscription() {
-            const { body, subject } = buildInscriptionMessage();
+            const { body, subject, prenom } = buildInscriptionMessage();
             document.getElementById('insc-apercu').textContent = body;
             document.getElementById('insc-copie').textContent = '';
+            document.getElementById('insc-prenom-aide').hidden = !!prenom;
 
-            // Liens de l'événement s'ils sont dans la description, sinon liens généraux.
-            // Instagram ouvre toujours la messagerie (la description donne en général le profil).
-            const { event, canaux } = currentInscription;
-            const to = encodeURIComponent(CONTACTS.mail);
+            const { event, liens } = currentInscription;
+            const mail = lien('mail');
+            const to = encodeURIComponent(mail);
             const su = encodeURIComponent(subject);
             const bo = encodeURIComponent(body);
-            const liens = {
-                gmail: `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${bo}`,
-                outlook: `https://outlook.live.com/mail/0/deeplink/compose?to=${to}&subject=${su}&body=${bo}`,
-                mailapp: `mailto:${CONTACTS.mail}?subject=${su}&body=${bo}`,
-                discord: canaux.discord || CONTACTS.discord[event.type],
-                instagram: CONTACTS.instagram,
-                meetup: canaux.meetup || CONTACTS.meetup,
-                vibes: canaux.vibes || CONTACTS.vibes
+            const urls = {
+                gmail: mail && `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${bo}`,
+                outlook: mail && `https://outlook.live.com/mail/0/deeplink/compose?to=${to}&subject=${su}&body=${bo}`,
+                mailapp: mail && `mailto:${mail}?subject=${su}&body=${bo}`,
+                discord: lien('discord_' + event.type),
+                instagram: lien('instagram'),
+                meetup: liens.meetup || lien('meetup'),
+                vibes: liens.vibes || lien('vibes')
             };
-            Object.entries(liens).forEach(([canal, url]) => {
+            Object.entries(urls).forEach(([canal, url]) => {
                 const a = document.getElementById('insc-' + canal);
-                if (a) a.href = url;
+                if (!a) return;
+                if (prenom && url) a.href = url;
+                else a.removeAttribute('href');
+                a.setAttribute('aria-disabled', String(!(prenom && url)));
             });
+
+            const mailButton = document.getElementById('insc-mail');
+            if (mailButton) {
+                mailButton.disabled = !prenom || !mail;
+                if (mailButton.disabled) {
+                    document.getElementById('insc-mail-menu').hidden = true;
+                    mailButton.setAttribute('aria-expanded', 'false');
+                }
+            }
         }
 
         // Copie synchrone (avant l'ouverture du nouvel onglet) + API moderne en complément
@@ -1698,13 +1701,15 @@
         }
 
         function copierAdresseMail() {
-            const ok = copyText(CONTACTS.mail);
+            const mail = lien('mail');
+            const ok = copyText(mail);
             document.getElementById('insc-copie').textContent = ok
-                ? `✅ Adresse copiée (${CONTACTS.mail}). Pense à copier aussi le message ci-dessus.`
-                : `Copie impossible : notre adresse est ${CONTACTS.mail}`;
+                ? `✅ Adresse copiée (${mail}). Pense à copier aussi le message ci-dessus.`
+                : `Copie impossible : notre adresse est ${mail}`;
         }
 
-        function onInscriptionCanal(canal) {
+        function onInscriptionCanal() {
+            if (!buildInscriptionMessage().prenom) return;
             const ok = copyText(buildInscriptionMessage().body);
             document.getElementById('insc-copie').textContent = ok
                 ? '✅ Message copié ! Colle-le dans la conversation.'
@@ -1726,6 +1731,7 @@
         // Charger les événements au démarrage
         readUrl();
         renderLegend();
+        renderLiensStatiques();
         loadEvents();
 
         // Rafraîchir automatiquement selon la config, seulement si l'onglet est visible
