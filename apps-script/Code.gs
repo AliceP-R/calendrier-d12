@@ -99,11 +99,12 @@ function getCalendarEvents(calendarId, type, config, startDate, endDate) {
 }
 
 // Retire tout ce qui suit le marqueur ---interne--- (ne doit jamais quitter le serveur)
-// Tolère majuscules, espaces, tirets longs et balises HTML insérées par Google Agenda
+// Tolère majuscules, espaces, tirets longs, balises HTML insérées par Google Agenda
+// et fautes de frappe en fin de mot (---internet---, ---internes---…)
 function stripInternal(description) {
   if (!description) return '';
   const text = String(description);
-  const match = text.search(/(?:-{2,}|[–—]+)\s*(?:<[^>]*>\s*)*interne\s*(?:<[^>]*>\s*)*(?:-{2,}|[–—]+)/i);
+  const match = text.search(/(?:-{2,}|[–—]+)\s*(?:<[^>]*>\s*)*interne[a-z]*\s*(?:<[^>]*>\s*)*(?:-{2,}|[–—]+)/i);
   return match === -1 ? text.trim() : text.substring(0, match).trim();
 }
 
