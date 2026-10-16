@@ -54,21 +54,22 @@ function getCalendarEvents(calendarId, type, config, startDate, endDate) {
   let pageToken = '';
 
   do {
+    // Service avancé « Calendar » (activé dans le projet) : donne le colorId de chaque évènement.
     // singleEvents=true déplie les évènements récurrents
-    const url = 'https://www.googleapis.com/calendar/v3/calendars/' + encodeURIComponent(calendarId) + '/events' +
-                '?timeMin=' + encodeURIComponent(startDate.toISOString()) +
-                '&timeMax=' + encodeURIComponent(endDate.toISOString()) +
-                '&singleEvents=true&showDeleted=false&maxResults=250' +
-                (pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : '');
-    const response = UrlFetchApp.fetch(url, {
-      headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() },
-      muteHttpExceptions: true
-    });
-    if (response.getResponseCode() !== 200) {
-      throw new Error('Agenda ' + type.toUpperCase() + ' illisible (code ' + response.getResponseCode() + ')');
+    let data;
+    try {
+      data = Calendar.Events.list(calendarId, {
+        timeMin: startDate.toISOString(),
+        timeMax: endDate.toISOString(),
+        singleEvents: true,
+        showDeleted: false,
+        maxResults: 250,
+        pageToken: pageToken || undefined
+      });
+    } catch (error) {
+      throw new Error('Agenda ' + type.toUpperCase() + ' illisible : ' + error.message);
     }
 
-    const data = JSON.parse(response.getContentText());
     (data.items || []).forEach(event => {
       const visibility = String(event.visibility || 'default').toLowerCase();
       if (event.status === 'cancelled' || visibility === 'private' || visibility === 'confidential') return;
