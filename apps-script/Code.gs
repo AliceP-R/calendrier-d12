@@ -136,11 +136,16 @@ function getConfig() {
   return config;
 }
 
+// Service avancé « Google Sheets » : fonctionne avec la seule permission de lecture
 function readConfigFromSheet() {
-  const spreadsheet = SpreadsheetApp.openById(CONFIG_SHEET_ID);
+  const result = Sheets.Spreadsheets.Values.batchGet(CONFIG_SHEET_ID, {
+    ranges: ['Couleurs', 'Liens'],
+    valueRenderOption: 'UNFORMATTED_VALUE' // cases à cocher → true/false, nombres → nombres
+  });
+  const [couleursRows, liensRows] = result.valueRanges.map(range => readTable(range.values));
   const couleurs = { jds: {}, jdr: {} };
 
-  readTable(spreadsheet, 'Couleurs').forEach(row => {
+  couleursRows.forEach(row => {
     const type = String(row['calendrier'] || '').trim().toLowerCase();
     const id = String(row['id'] || '').trim();
     if (!couleurs[type] || !id) return;
@@ -163,7 +168,7 @@ function readConfigFromSheet() {
   });
 
   const liens = {};
-  readTable(spreadsheet, 'Liens').forEach(row => {
+  liensRows.forEach(row => {
     const cle = String(row['cle'] || '').trim().toLowerCase();
     const valeur = String(row['valeur'] || '').trim();
     if (cle && valeur) liens[cle] = valeur;
@@ -193,10 +198,9 @@ function readBouton(row) {
 
 // Lignes d'un onglet sous forme d'objets, repérées par leur en-tête :
 // « ID (ne pas toucher) » → id, « Nom (légende) » → nom, « Salle (JDR) » → salle…
-function readTable(spreadsheet, sheetName) {
-  const sheet = spreadsheet.getSheetByName(sheetName);
-  if (!sheet) throw new Error('Onglet « ' + sheetName + ' » introuvable');
-  const values = sheet.getDataRange().getValues();
+// (les cellules vides en fin de ligne ne sont pas renvoyées par l'API)
+function readTable(values) {
+  values = (values || []).slice();
   const headers = (values.shift() || []).map(normalize);
   return values
     .filter(row => row.some(cell => String(cell).trim() !== ''))
