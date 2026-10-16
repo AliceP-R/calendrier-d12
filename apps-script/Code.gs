@@ -1,7 +1,8 @@
 // Google Apps Script pour Au Dé 12 : envoie au site les évènements publics des deux agendas
 // et la configuration lue dans le Google Sheet « Calendrier d12 - config ».
-// À copier-coller ENTIÈREMENT dans script.google.com.
+// Projet « Calendrier Coloré » sur script.google.com (envoyé avec clasp, ou copié-collé ENTIÈREMENT).
 // Lecture seule : ce script ne modifie jamais ni les agendas ni le Sheet.
+// Les permissions sont fixées en lecture seule dans appsscript.json (oauthScopes).
 
 const JDS_CALENDAR_ID = 'c_b182530e0a332b3e4f20ff0c2308bb5010f8c91130af1b6e6828aa6a15751a6e@group.calendar.google.com';
 const JDR_CALENDAR_ID = 'gestionjdr@au-de12paris.com';
