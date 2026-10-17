@@ -128,7 +128,7 @@
             color: white;
         }
 
-        /* Légende (une seule, partagée par les deux mois) */
+        /* Légende */
         .legend {
             display: flex;
             gap: 32px;
@@ -206,31 +206,7 @@
             font-size: 1.5em;
             color: var(--brun);
             margin: 0;
-            min-width: 9em;
             text-align: center;
-            text-transform: capitalize;
-        }
-
-        .month-arrow {
-            width: 40px;
-            height: 40px;
-            border: 2px solid var(--brun);
-            border-radius: 50%;
-            background: white;
-            color: var(--brun);
-            font-size: 1.4em;
-            line-height: 1;
-            cursor: pointer;
-        }
-
-        .month-arrow:hover:not(:disabled) {
-            background: var(--brun);
-            color: white;
-        }
-
-        .month-arrow:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
         }
 
         .calendar-table-wrapper {
@@ -328,6 +304,18 @@
 
         .day-other-month {
             background: #f7f2ea;
+        }
+
+        /* Mois indiqué au 1er et au premier jour affiché */
+        .day-month {
+            font-weight: 600;
+            font-size: 0.8em;
+            color: var(--rouge);
+        }
+
+        /* Semaine passée : atténuée mais toujours cliquable */
+        .calendar td.day-past > * {
+            opacity: 0.55;
         }
 
         /* Date du jour */
@@ -714,11 +702,6 @@
             text-align: center;
         }
 
-        .skeleton .month-arrow {
-            opacity: 0.3;
-            cursor: default;
-        }
-
         .skeleton-event {
             height: 24px;
             margin: 3px 0;
@@ -863,7 +846,7 @@
 
         <div class="content">
             <section class="intro">
-                <p>Retrouve ici les soirées jeux de société et les créneaux de jeu de rôle des <strong>deux prochains mois</strong>.</p>
+                <p>Retrouve ici les soirées jeux de société et les créneaux de jeu de rôle des <strong>30 prochains jours</strong> (et de la semaine passée).</p>
                 <ul>
                     <li>👆 <strong>Clique sur un évènement</strong> pour voir son détail (horaire, description, inscription…)</li>
                     <li>🔎 <strong>Filtre</strong> par type ou par catégorie avec les boutons et les cases ci-dessous</li>
@@ -1058,48 +1041,79 @@
             });
         }
 
-        // Squelette du mois affiché, même structure que le vrai calendrier
-        function renderCalendarSkeleton() {
-            const today = new Date();
-            const date = new Date(today.getFullYear(), today.getMonth() + viewOffset, 1);
-            const month = date.getMonth();
-            const year = date.getFullYear();
-            const { days, startDay } = getMonthCalendar(year, month);
+        // Période affichée : une semaine avant aujourd'hui, 30 jours après
+        const JOURS_AVANT = 7;
+        const JOURS_APRES = 30;
 
-            let html = '<div class="month-block skeleton" aria-busy="true" aria-label="Chargement des évènements">' +
-                       '<div class="month-nav">' +
-                       '<button class="month-arrow" disabled tabindex="-1">‹</button>' +
-                       '<h2 class="month-title skeleton-title">' + monthNames[month] + ' ' + year + '</h2>' +
-                       '<button class="month-arrow" disabled tabindex="-1">›</button>' +
-                       '</div>' +
+        function getPeriode() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const debut = new Date(today);
+            debut.setDate(today.getDate() - JOURS_AVANT);
+            const fin = new Date(today);
+            fin.setDate(today.getDate() + JOURS_APRES);
+            return { today, debut, fin };
+        }
+
+        // « 10 octobre – 16 novembre 2026 » (année répétée si la période change d'année)
+        function periodeLabel() {
+            const { debut, fin } = getPeriode();
+            const jour = d => d.getDate() + ' ' + monthNames[d.getMonth()];
+            return debut.getFullYear() === fin.getFullYear()
+                ? `${jour(debut)} – ${jour(fin)} ${fin.getFullYear()}`
+                : `${jour(debut)} ${debut.getFullYear()} – ${jour(fin)} ${fin.getFullYear()}`;
+        }
+
+        // Numéro du jour, avec le mois au 1er et au premier jour affiché
+        function dayLabel(d, debut) {
+            const n = d.getDate();
+            return n === 1 || d.getTime() === debut.getTime()
+                ? `${n} <span class="day-month">${d.toLocaleDateString('fr-FR', { month: 'short' })}</span>`
+                : String(n);
+        }
+
+        // Grille de semaines complètes (lundi → dimanche) couvrant la période ;
+        // renderDay(date, dateStr) donne le contenu des jours de la période
+        function renderGrid(title, renderDay, skeleton) {
+            const { debut, fin } = getPeriode();
+            let html = (skeleton ? '<div class="month-block skeleton" aria-busy="true" aria-label="Chargement des évènements">' : '<div class="month-block">') +
+                       '<div class="month-nav"><h2 class="month-title' + (skeleton ? ' skeleton-title' : '') + '">' + title + '</h2></div>' +
                        '<div class="calendar-table-wrapper"><table class="calendar"><thead><tr>';
             dayNames.forEach(day => {
                 html += renderWeekdayHeader(day);
             });
             html += '</tr></thead><tbody>';
 
-            const weeks = Math.ceil((startDay + days) / 7);
-            for (let week = 0; week < weeks; week++) {
+            const day = new Date(debut);
+            day.setDate(debut.getDate() - (debut.getDay() + 6) % 7);
+            while (day <= fin) {
                 html += '<tr>';
-                for (let day = 0; day < 7; day++) {
-                    const n = week * 7 + day - startDay + 1;
-                    if (n < 1 || n > days) {
-                        html += '<td class="day-other-month"><div class="day-number"></div></td>';
-                        continue;
-                    }
-                    const isToday = viewOffset === 0 && n === today.getDate();
-                    html += `<td${isToday ? ' class="day-today" aria-current="date"' : ''}><div class="day-number">${n}</div><div class="events-container">`;
-                    // Faux évènements répartis de façon déterministe
-                    const count = (n * 7 + day) % 3;
-                    for (let i = 0; i < count; i++) {
-                        html += `<div class="skeleton-event${(n + i) % 2 ? ' short' : ''}"></div>`;
-                    }
-                    html += '</div></td>';
+                for (let i = 0; i < 7; i++) {
+                    html += day < debut || day > fin
+                        ? '<td class="day-other-month"><div class="day-number"></div></td>'
+                        : renderDay(new Date(day), toDateStr(day));
+                    day.setDate(day.getDate() + 1);
                 }
                 html += '</tr>';
             }
 
             return html + '</tbody></table></div></div>';
+        }
+
+        // Squelette du calendrier, même structure que le vrai
+        function renderCalendarSkeleton() {
+            const { today, debut } = getPeriode();
+            return renderGrid(periodeLabel(), (d, dateStr) => {
+                const n = d.getDate();
+                const classes = [d < today ? 'day-past' : '', d.getTime() === today.getTime() ? 'day-today' : ''].filter(Boolean).join(' ');
+                let html = `<td${classes ? ` class="${classes}"` : ''}${d.getTime() === today.getTime() ? ' aria-current="date"' : ''}><div class="day-number">${dayLabel(d, debut)}</div><div class="events-container">`;
+                // Faux évènements répartis de façon déterministe
+                const count = (n * 7 + d.getDay()) % 3;
+                for (let i = 0; i < count; i++) {
+                    html += `<div class="skeleton-event${(n + i) % 2 ? ' short' : ''}"></div>`;
+                }
+                return html + '</div></td>';
+            }, true);
         }
 
         // silent : rafraîchissement automatique, on garde le calendrier affiché
@@ -1166,17 +1180,6 @@
             </div>`;
         }
 
-        function getMonthCalendar(year, month) {
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-            const days = lastDay.getDate();
-
-            let startDay = firstDay.getDay() - 1;
-            if (startDay === -1) startDay = 6;
-
-            return { days, startDay, year, month };
-        }
-
         function getEventsForDate(dateStr) {
             let events = currentFilter === 'all'
                 ? [...allEvents.jds, ...allEvents.jdr]
@@ -1230,99 +1233,37 @@
             document.getElementById('legend').innerHTML = html;
         }
 
-        function renderMonth(month, year) {
-            return '<div class="month-block">' +
-                   '<div class="month-nav">' +
-                   '<button class="month-arrow" aria-label="Mois précédent" onclick="changeMonth(-1)"' + (viewOffset === 0 ? ' disabled' : '') + '>‹</button>' +
-                   '<h2 class="month-title" aria-live="polite">' + monthNames[month] + ' ' + year + '</h2>' +
-                   '<button class="month-arrow" aria-label="Mois suivant" onclick="changeMonth(1)"' + (viewOffset === 1 ? ' disabled' : '') + '>›</button>' +
-                   '</div>' +
-                   renderCalendarOnly(month, year) +
-                   '</div>';
-        }
-
-        // 0 = mois en cours, 1 = mois suivant
-        let viewOffset = 0;
-
-        function changeMonth(delta) {
-            viewOffset = Math.min(1, Math.max(0, viewOffset + delta));
-            updateCalendarDisplay();
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (document.getElementById('eventModal').classList.contains('active')) return;
-            if (e.key === 'ArrowLeft') changeMonth(-1);
-            else if (e.key === 'ArrowRight') changeMonth(1);
-        });
-
         function updateCalendarDisplay() {
-            const today = new Date();
-            const currentMonth = today.getMonth();
-            const currentYear = today.getFullYear();
-            const nextMonth = currentMonth === 11 ? 0 : currentMonth + 1;
-            const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
-
-            const monthStr = `${monthNames[currentMonth]} ${currentYear}`;
-            const nextMonthStr = `${monthNames[nextMonth]} ${nextYear}`;
-            document.getElementById('month-range').textContent = `${monthStr} - ${nextMonthStr}`;
-
+            document.getElementById('month-range').textContent = periodeLabel();
             renderLegend();
-            document.getElementById('calendar-container').innerHTML =
-                viewOffset === 0 ? renderMonth(currentMonth, currentYear) : renderMonth(nextMonth, nextYear);
+            document.getElementById('calendar-container').innerHTML = renderCalendar();
         }
 
-        function renderCalendarOnly(month, year) {
-            const { days, startDay } = getMonthCalendar(year, month);
-            let html = `<div class="calendar-table-wrapper"><table class="calendar"><thead><tr>`;
+        function renderCalendar() {
+            const { today, debut } = getPeriode();
+            return renderGrid(periodeLabel(), (d, dateStr) => {
+                const dayEvents = getEventsForDate(dateStr);
+                const isToday = d.getTime() === today.getTime();
+                // Jours passés atténués
+                let html = isToday ? `<td class="day-today" aria-current="date">` : d < today ? `<td class="day-past">` : `<td>`;
+                const jdsCount = dayEvents.filter(e => e.type === 'jds').length;
+                const jdrCount = dayEvents.filter(e => e.type === 'jdr').length;
+                let counts = '';
+                if (jdsCount) counts += `<span title="Jeux de société">🎯 ${jdsCount}</span>`;
+                if (jdrCount) counts += `<span title="Jeux de rôle">⚔️ ${jdrCount}</span>`;
 
-            dayNames.forEach(day => {
-                html += renderWeekdayHeader(day);
+                html += `<div class="day-header"><div class="day-number">${dayLabel(d, debut)}</div>`;
+                if (counts) html += `<div class="day-counts">${counts}</div>`;
+                html += `</div>`;
+                html += `<div class="events-container">`;
+
+                dayEvents.forEach(event => {
+                    const bgColor = couleurDe(event.type, event.colorId).teinte;
+                    html += `<div class="event" style="background-color: ${bgColor}; color: ${getTextColor(bgColor)};" data-type="${event.type}" data-id="${escapeHtml(event.id)}" onclick="openEventModal(this.dataset.type, this.dataset.id)">${formatEventDisplay(event)}</div>`;
+                });
+
+                return html + `</div></td>`;
             });
-            html += `</tr></thead><tbody>`;
-
-            let dayCounter = 1;
-            let done = false;
-
-            for (let week = 0; week < 6; week++) {
-                html += '<tr>';
-                for (let day = 0; day < 7; day++) {
-                    if ((week === 0 && day < startDay) || done) {
-                        html += '<td class="day-other-month"><div class="day-number"></div></td>';
-                    } else if (dayCounter > days) {
-                        html += '<td class="day-other-month"><div class="day-number"></div></td>';
-                        done = true;
-                    } else {
-                        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayCounter).padStart(2, '0')}`;
-                        const dayEvents = getEventsForDate(dateStr);
-
-                        const isToday = dateStr === toDateStr(new Date());
-                        html += isToday ? `<td class="day-today" aria-current="date">` : `<td>`;
-                        const jdsCount = dayEvents.filter(e => e.type === 'jds').length;
-                        const jdrCount = dayEvents.filter(e => e.type === 'jdr').length;
-                        let counts = '';
-                        if (jdsCount) counts += `<span title="Jeux de société">🎯 ${jdsCount}</span>`;
-                        if (jdrCount) counts += `<span title="Jeux de rôle">⚔️ ${jdrCount}</span>`;
-
-                        html += `<div class="day-header"><div class="day-number">${dayCounter}</div>`;
-                        if (counts) html += `<div class="day-counts">${counts}</div>`;
-                        html += `</div>`;
-                        html += `<div class="events-container">`;
-
-                        dayEvents.forEach(event => {
-                            const bgColor = couleurDe(event.type, event.colorId).teinte;
-                            html += `<div class="event" style="background-color: ${bgColor}; color: ${getTextColor(bgColor)};" data-type="${event.type}" data-id="${escapeHtml(event.id)}" onclick="openEventModal(this.dataset.type, this.dataset.id)">${formatEventDisplay(event)}</div>`;
-                        });
-
-                        html += `</div></td>`;
-                        dayCounter++;
-                    }
-                }
-                html += '</tr>';
-                if (done) break;
-            }
-
-            html += `</tbody></table></div>`;
-            return html;
         }
 
         function filterCalendar(type, button) {
@@ -1357,10 +1298,9 @@
             return s.charAt(0).toUpperCase() + s.slice(1);
         }
 
-        // L'API couvre le mois en cours et le suivant
+        // Dernier jour affiché dans le calendrier
         function dispoHorizon() {
-            const today = new Date();
-            return new Date(today.getFullYear(), today.getMonth() + 2, 0);
+            return getPeriode().fin;
         }
 
         function blockingJdrEvents(dateStr) {
@@ -1396,7 +1336,7 @@
             }
             list.innerHTML = found.length
                 ? found.join('')
-                : '<li class="dispo-muted">Aucune date libre d’ici fin ' + monthNames[horizon.getMonth()] + '.</li>';
+                : '<li class="dispo-muted">Aucune date libre d’ici le ' + horizon.getDate() + ' ' + monthNames[horizon.getMonth()] + '.</li>';
         }
 
         function renderDispoVerdict() {

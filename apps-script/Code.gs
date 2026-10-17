@@ -30,12 +30,19 @@ function doGet(e) {
   return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
 }
 
-// Mois en cours et mois suivant
+// Couvre à la fois l'affichage par mois (mois en cours et suivant)
+// et l'affichage glissant (7 jours avant aujourd'hui, 30 jours après)
 function getPublicData() {
   const config = getConfig();
   const now = new Date();
-  const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-  const endDate = new Date(now.getFullYear(), now.getMonth() + 2, 1);
+  const startDate = new Date(Math.min(
+    new Date(now.getFullYear(), now.getMonth(), 1),
+    new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7)
+  ));
+  const endDate = new Date(Math.max(
+    new Date(now.getFullYear(), now.getMonth() + 2, 1),
+    new Date(now.getFullYear(), now.getMonth(), now.getDate() + 31)
+  ));
 
   return {
     jds: getCalendarEvents(JDS_CALENDAR_ID, 'jds', config, startDate, endDate),
