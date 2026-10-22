@@ -77,7 +77,8 @@ Pour l'évènement signalé, lis-le dans l'agenda (titre, date, `colorId`, visib
 
 ### La couleur, le nom ou la phrase sont faux
 - Ils viennent de l'onglet **Couleurs** (Teinte au format `#RRGGBB`, Nom (légende), Phrase). Une teinte mal écrite est remplacée par du brun.
-- Pour la salle JDR : colonne « Salle (JDR) » = `bloque`, `libre` ou `ligue` (vide = bloque). Un évènement sans étiquette connue ne bloque **pas** la salle.
+- Pour la salle JDR : colonne « Salle (JDR) » = `bloque`, `libre` ou `ligue` (vide = bloque). Un évènement sans étiquette connue ne bloque **pas** la salle. Un créneau `ligue` bloque toujours la salle, réservé ou non.
+- Créneau `ligue` : il compte comme **réservé par la Ligue** quand sa partie interne contient un bloc `[Ligue Ludique]` (écrit par la routine Ligue). Il affiche alors la colonne « Phrase si réservé (Ligue) » à la place de la Phrase, et le bouton de l'étiquette (lien « ligue » de l'onglet Liens). Pas encore réservé : la Phrase, sans bouton.
 
 ---
 

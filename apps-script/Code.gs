@@ -80,7 +80,7 @@ function getCalendarEvents(calendarId, type, config, startDate, endDate) {
 
       const isAllDay = !event.start.dateTime;
       const start = new Date(event.start.dateTime || event.start.date);
-      result.push({
+      const item = {
         title: String(event.summary || ''),
         description: stripInternal(event.description),
         startDate: isAllDay ? event.start.date : formatDate(start),
@@ -90,7 +90,13 @@ function getCalendarEvents(calendarId, type, config, startDate, endDate) {
         location: String(event.location || ''),
         colorId: colorId,
         id: String(event.id)
-      });
+      };
+      // Créneau Ligue déjà pris : la routine Ligue a écrit un bloc [Ligue Ludique] dans la partie interne.
+      // Seul ce oui/non quitte le serveur, jamais le contenu du bloc.
+      if (couleurs[colorId].salle === 'ligue') {
+        item.ligueReservee = /\[\s*Ligue Ludique\s*\]/i.test(internalPart(event.description));
+      }
+      result.push(item);
     });
     pageToken = data.nextPageToken || '';
   } while (pageToken);
@@ -110,10 +116,21 @@ const MARQUEUR_LIGNE = new RegExp('(?:^|\\n|<br\\s*/?>|</?(?:p|div)[^>]*>)' + TA
                                   '(?=\\n|<br\\s*/?>|</?(?:p|div)[^>]*>|$)', 'i');
 
 function stripInternal(description) {
-  if (!description) return '';
-  const text = String(description);
+  const text = String(description || '');
+  const position = internalPosition(text);
+  return (position === -1 ? text : text.substring(0, position)).trim();
+}
+
+// Partie interne (vide s'il n'y a pas de marqueur) : sert seulement côté serveur
+function internalPart(description) {
+  const text = String(description || '');
+  const position = internalPosition(text);
+  return position === -1 ? '' : text.substring(position);
+}
+
+function internalPosition(text) {
   const positions = [MARQUEUR_TIRETS, MARQUEUR_LIGNE].map(re => text.search(re)).filter(i => i !== -1);
-  return positions.length ? text.substring(0, Math.min.apply(null, positions)).trim() : text.trim();
+  return positions.length ? Math.min.apply(null, positions) : -1;
 }
 
 function formatDate(date) {
@@ -172,6 +189,8 @@ function readConfigFromSheet() {
       // En JDR, une étiquette sans effet précisé bloque la salle
       salle: type === 'jdr' ? (['libre', 'ligue'].indexOf(salle) !== -1 ? salle : 'bloque') : '',
       phrase: String(row['phrase'] || '').trim(),
+      // Colonne « Phrase si réservé (Ligue) » : remplace la phrase quand la Ligue a déjà pris le créneau
+      phraseReservee: String(row['phrase si reserve'] || '').trim(),
       bouton: readBouton(row)
     };
   });
@@ -285,7 +304,8 @@ function testGetEvents() {
   ['jds', 'jdr'].forEach(type => {
     Logger.log('── ' + type.toUpperCase() + ' : ' + data[type].length + ' évènements publics');
     data[type].forEach(e => {
-      Logger.log('  ' + e.startDate + ' | ' + e.title + ' | ' + data.config.couleurs[type][e.colorId].nom);
+      Logger.log('  ' + e.startDate + ' | ' + e.title + ' | ' + data.config.couleurs[type][e.colorId].nom +
+                 (e.ligueReservee === undefined ? '' : e.ligueReservee ? ' | 🔒 réservé par la Ligue' : ' | ⏳ pas encore réservé'));
     });
   });
 }
