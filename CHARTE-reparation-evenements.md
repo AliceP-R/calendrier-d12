@@ -54,8 +54,10 @@ Pour l'évènement signalé, lis-le dans l'agenda (titre, date, `colorId`, visib
 | Évènement **annulé** | `status` = `cancelled` | Normal. |
 
 ### Une information privée est visible sur le site
-- Le marqueur doit s'écrire **`---interne---`** (au moins deux tirets de chaque côté, ou des tirets longs `—`). Tout ce qui est **en dessous** est retiré avant d'arriver sur le site.
-- Le code tolère majuscules, espaces et fautes en fin de mot (`---internet---`, `---INTERNES---`), mais **pas** un seul tiret (`-interne-`), un mot coupé (`---inter ne---`) ou un marqueur absent.
+- Tout ce qui est **en dessous** du marqueur est retiré avant d'arriver sur le site. Le marqueur est reconnu sous deux formes :
+  1. **« interne » entouré de tirets**, quel que soit le mélange : `---interne---`, `—interne—`, `—-interne—-` (l'iPhone transforme `--` en `—`), `-interne-`, avec ou sans espaces ;
+  2. **« interne » seul sur sa ligne**, avec ou sans deux-points : `interne`, `Interne :`, `INTERNE`.
+- Majuscules et fautes en fin de mot (`internet`, `internes`) sont tolérées. **Pas** reconnus : un mot coupé (`inter ne`), « interne » au milieu d'une phrase (« réunion interne lundi », voulu), ou un marqueur absent.
 - Vérifier aussi que l'info privée n'est pas **au-dessus** du marqueur, ni dans le **titre** ou le **lieu** (jamais masqués).
 
 ### Le bouton est absent, en trop ou faux

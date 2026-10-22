@@ -98,14 +98,22 @@ function getCalendarEvents(calendarId, type, config, startDate, endDate) {
   return result;
 }
 
-// Retire tout ce qui suit le marqueur ---interne--- (ne doit jamais quitter le serveur)
-// Tolère majuscules, espaces, tirets longs, balises HTML insérées par Google Agenda
-// et fautes de frappe en fin de mot (---internet---, ---internes---…)
+// Retire tout ce qui suit le marqueur interne (ne doit jamais quitter le serveur). Deux formes reconnues :
+//   1. « interne » entouré de tirets, quel que soit le mélange : ---interne---, —interne—, —-interne—-
+//      (l'iPhone transforme -- en —), -interne-, avec ou sans espaces ;
+//   2. « interne » seul sur sa ligne, avec ou sans deux-points : interne, Interne :, INTERNE.
+// Tolère majuscules, balises HTML insérées par Google Agenda et fautes en fin de mot (internet, internes…).
+// Un « interne » au milieu d'une phrase ne coupe rien.
+const TAGS = '(?:\\s|&nbsp;|<[^>]*>)*';
+const MARQUEUR_TIRETS = new RegExp('[-–—]+' + TAGS + 'interne[a-z]*' + TAGS + '[-–—]+', 'i');
+const MARQUEUR_LIGNE = new RegExp('(?:^|\\n|<br\\s*/?>|</?(?:p|div)[^>]*>)' + TAGS + 'interne[a-z]*' + TAGS + ':?' + TAGS +
+                                  '(?=\\n|<br\\s*/?>|</?(?:p|div)[^>]*>|$)', 'i');
+
 function stripInternal(description) {
   if (!description) return '';
   const text = String(description);
-  const match = text.search(/(?:-{2,}|[–—]+)\s*(?:<[^>]*>\s*)*interne[a-z]*\s*(?:<[^>]*>\s*)*(?:-{2,}|[–—]+)/i);
-  return match === -1 ? text.trim() : text.substring(0, match).trim();
+  const positions = [MARQUEUR_TIRETS, MARQUEUR_LIGNE].map(re => text.search(re)).filter(i => i !== -1);
+  return positions.length ? text.substring(0, Math.min.apply(null, positions)).trim() : text.trim();
 }
 
 function formatDate(date) {
