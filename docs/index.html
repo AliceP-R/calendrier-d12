@@ -675,7 +675,6 @@
 
         #dispo-verdict.libre { border-left-color: var(--vert); background: #eef3e6; }
         #dispo-verdict.occupee { border-left-color: #c62828; background: #fbe9e7; }
-        #dispo-verdict.demande { border-left-color: var(--orange); background: #fbeee3; }
 
         .dispo-next-title {
             margin-top: 12px;
@@ -969,7 +968,7 @@
 
         // Configuration lue dans le Google Sheet « Calendrier d12 - config » et envoyée par l'Apps Script :
         //   couleurs.jds / couleurs.jdr : une entrée par ID d'étiquette (onglet Couleurs)
-        //     { nom, teinte, salle ('bloque' | 'libre' | 'ligue', JDR uniquement), phrase,
+        //     { nom, teinte, salle ('bloque' | 'libre' | 'ligue', JDR uniquement), phrase, phraseReservee,
         //       bouton: null | { type: 'externe', texte } | { type: 'demande', texte, objet, message, canaux } }
         //   liens : onglet Liens (mail, instagram, meetup, vibes, discord_invitation, discord_jds, discord_jdr)
         // Gardée dans le navigateur pour afficher la légende sans attendre au prochain passage.
@@ -1414,9 +1413,10 @@
             const today = new Date();
             today.setHours(0, 0, 0, 0);
             const inCalendar = date <= dispoHorizon();
+            // Tout évènement qui bloque la salle compte, y compris un créneau Ligue pas encore réservé
             const blocking = inCalendar ? blockingJdrEvents(input.value) : [];
-            // Les créneaux de la Ligue Ludique ne bloquent pas une demande faite un jeudi ou un samedi
-            const others = blocking.filter(e => (couleurDe('jdr', e.colorId) || {}).salle !== 'ligue');
+            const ligueSeulement = blocking.length && blocking.every(e =>
+                (couleurDe('jdr', e.colorId) || {}).salle === 'ligue' && !e.ligueReservee);
             let state, html;
 
             if (date < today) {
@@ -1425,23 +1425,15 @@
             } else if (weekday === 2) {
                 state = 'occupee';
                 html = `❌ ${label} : pas de créneau JDR le mardi.`;
-            } else if (weekday === 4 || weekday === 6) {
-                if (others.length) {
-                    state = 'occupee';
-                    html = `❌ ${label} : la salle est déjà prise (${others.map(e => e.title).join(', ')}).`;
-                } else {
-                    const oneMonthAhead = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
-                    state = 'demande';
-                    html = date >= oneMonthAhead
-                        ? `⏳ ${label} : le jeudi et le samedi sont réservés en priorité à la Ligue Ludique, mais tu t’y prends plus d’un mois à l’avance : demande-nous !`
-                        : `⏳ ${label} : le jeudi et le samedi sont réservés en priorité à la Ligue Ludique. Pour réserver l’un de ces jours, préviens-nous au moins 1 mois à l’avance.`;
-                }
-            } else if (!inCalendar) {
-                state = '';
-                html = `${label} n’est pas encore dans le calendrier : demande-nous !`;
+            } else if (ligueSeulement) {
+                state = 'occupee';
+                html = `❌ ${label} : la salle est réservée en priorité à la Ligue Ludique ce jour-là.`;
             } else if (blocking.length) {
                 state = 'occupee';
                 html = `❌ ${label} : la salle est déjà prise (${blocking.map(e => e.title).join(', ')}).`;
+            } else if (!inCalendar) {
+                state = '';
+                html = `${label} n’est pas encore dans le calendrier : demande-nous !`;
             } else if (dispoCreneau(input.value)) {
                 const slot = dispoCreneau(input.value);
                 state = 'libre';
@@ -1476,10 +1468,12 @@
 
             let content = `<h3>📅 Date et heure</h3><p>${formatEventDateTime(event)}</p>`;
 
-            if (description || couleur.phrase) {
+            // Créneau Ligue déjà pris : phrase de la colonne « Phrase si réservé (Ligue) » si elle est remplie
+            const phrase = event.ligueReservee && couleur.phraseReservee ? couleur.phraseReservee : couleur.phrase;
+            if (description || phrase) {
                 content += '<h3>📝 Description</h3>';
                 if (description) content += `<p style="white-space: pre-wrap;">${linkify(description)}</p>`;
-                if (couleur.phrase) content += `<p class="phrase">${linkify(escapeHtml(couleur.phrase))}</p>`;
+                if (phrase) content += `<p class="phrase">${linkify(escapeHtml(phrase))}</p>`;
             }
 
             if (event.location) {
@@ -1543,14 +1537,20 @@
         }
 
         // Bouton de l'étiquette (onglet Couleurs), sauf évènement passé ou « Complet » dans le titre.
-        // Un bouton « lien externe » n'apparaît que si la description contient une ligne « Inscription : <lien> ».
+        // Un bouton « lien externe » n'apparaît que si la description contient une ligne « Inscription : <lien> »,
+        // ou, pour un créneau déjà pris par la Ligue, avec le lien « ligue » de l'onglet Liens.
+        // Un créneau Ligue pas encore réservé n'a jamais de bouton.
         function getBouton(event, couleur, liens) {
             const bouton = couleur.bouton;
             if (!bouton) return null;
+            if (couleur.salle === 'ligue' && !event.ligueReservee) return null;
             const end = new Date(event.endDateTime || event.startDateTime);
             if (end < new Date()) return null;
             if (/\bcompl[eè]te?s?\b/i.test(event.title)) return null;
-            if (bouton.type === 'externe') return liens.inscription ? { ...bouton, url: liens.inscription } : null;
+            if (bouton.type === 'externe') {
+                const url = liens.inscription || (event.ligueReservee ? lien('ligue') : '');
+                return url ? { ...bouton, url } : null;
+            }
             return bouton;
         }
 
