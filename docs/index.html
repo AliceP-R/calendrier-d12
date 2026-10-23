@@ -439,9 +439,9 @@
             margin-top: 0;
         }
 
-        /* Phrase de l'étiquette, sous la description */
+        /* Phrase de l'étiquette, au-dessus de la description */
         .phrase {
-            margin-top: 8px;
+            margin: 8px 0 12px;
             padding-left: 10px;
             border-left: 3px solid var(--creme-fonce);
         }
@@ -1454,7 +1454,8 @@
         }
 
         // Fenêtre de détail d'un évènement
-        // Ordre : titre, date et heure, description, phrase de l'étiquette, lieu, type, bouton
+        // Ordre : titre, date et heure, phrase de l'étiquette (commune à toutes ses soirées),
+        // description (propre à la soirée), lieu, type, bouton
         function openEventModal(type, id) {
             const event = allEvents[type].find(e => e.id === id);
             if (!event) return;
@@ -1472,8 +1473,8 @@
             const phrase = event.ligueReservee && couleur.phraseReservee ? couleur.phraseReservee : couleur.phrase;
             if (description || phrase) {
                 content += '<h3>📝 Description</h3>';
-                if (description) content += `<p style="white-space: pre-wrap;">${linkify(description)}</p>`;
                 if (phrase) content += `<p class="phrase">${linkify(escapeHtml(phrase))}</p>`;
+                if (description) content += `<p style="white-space: pre-wrap;">${linkify(description)}</p>`;
             }
 
             if (event.location) {
