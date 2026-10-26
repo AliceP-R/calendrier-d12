@@ -439,9 +439,10 @@
             margin-top: 0;
         }
 
-        /* Phrase de l'étiquette, sous la description */
+        /* Phrase de l'étiquette, sous la description (garde les sauts de ligne du Sheet) */
         .phrase {
             margin-top: 8px;
+            white-space: pre-wrap;
             padding-left: 10px;
             border-left: 3px solid var(--creme-fonce);
         }
@@ -1499,10 +1500,13 @@
             return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h');
         }
 
+        // « lundi 26 octobre 2026, de 19h30 à 23h30 » : l'heure de fin vient de l'évènement Google
         function formatEventDateTime(event) {
             const start = eventStart(event);
             const jour = start.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            return event.isAllDay ? `${jour}, toute la journée` : `${jour} à ${formatHeure(start)}`;
+            if (event.isAllDay) return `${jour}, toute la journée`;
+            const end = new Date(event.endDateTime);
+            return end > start ? `${jour}, de ${formatHeure(start)} à ${formatHeure(end)}` : `${jour} à ${formatHeure(start)}`;
         }
 
         let currentInscription = null;
