@@ -70,15 +70,34 @@ Pour l'évènement signalé, lis-le dans l'agenda (titre, date, `colorId`, visib
 | Mauvais canaux proposés | Colonnes Mail / Discord / Instagram / Meetup / Vibes du Sheet (VRAI/FAUX ou cases). |
 | Message ou objet du mail bizarre | Colonnes « Objet du mail » / « Message » : variables autorisées `{titre} {jour} {date} {heure} {horaire} {personnes}` (accolades, sans espace). |
 
+### Une information est affichée deux fois (doublon)
+Fenêtre de détail, dans l'ordre : titre, date et heure **de début à fin**, **description** (partie publique de l'agenda), **phrase de l'étiquette** (Sheet, encadré), lieu, type, bouton.
+
+Règle de partage :
+- **Phrase du Sheet** = ce qui est **commun** à toutes les soirées de l'étiquette (présentation générale, places habituelles, inscription obligatoire ou non, tarif). Les sauts de ligne se font avec **Ctrl + Entrée** (⌘ + Entrée sur Mac) dans la cellule.
+- **Description de l'agenda** = seulement ce qui est **propre à cette soirée**. Vide si rien de particulier (Client, Créneau Libre, V&M, Ligue Ludique : partie publique **vide**).
+- Ne jamais écrire dans la description : le **titre** recopié, l'**horaire** (« Lundi, 19h30 - 23h30 » : l'heure de fin est affichée automatiquement), le **tarif** déjà dans la phrase (« tarifs et fonctionnement habituels du bar » couvre aussi 5 € + 1 consommation toutes les 2 h et la nourriture obligatoire avec de l'alcool), les **contacts** (Discord, Instagram, mail : le bouton les propose déjà).
+
+Modèles de description :
+| Étiquette | Partie publique |
+|---|---|
+| BOTC (JDS) | `Niveau : …` / `Scénario : …` / `Conteur : …` puis `Vibes : https://…` / `Meetup : https://…` |
+| Découverte (JDS) | présentation du jeu, tables / places / présence des auteur·ices, puis lignes Vibes / Meetup |
+| Tables Ouvertes (JDS) | vide, ou une phrase propre à la série (ex. S.A.D) |
+| Évènement externe (JDS) | texte du partenaire + `Inscription : https://…` s'il y en a une ; vide pour une privatisation complète, « La moitié du bar est privatisée. » pour une partielle |
+| OS & Initiation (JDR) | modèle de Clémence (nombre de places, présentation), **sans** les lignes de contact ; la session reste privée tant que le texte n'est pas prêt |
+| Campagne (JDR) | ce qui est propre à la campagne (jeu, MJ, rythme, inscriptions ouvertes ou fermées, tarif) |
+
 ### Lignes obsolètes à nettoyer (proposer, ne pas imposer)
 - **`Inscription : aucune`** → à remplacer par « Complet » dans le titre si la soirée est complète, sinon supprimer la ligne.
-- **`Discord : …`** → inutile (le salon planning de l'onglet Liens est utilisé), peut être supprimée.
+- **`Discord : …`**, **`Instagram : …`**, adresse mail → inutiles (le bouton propose ces canaux), à supprimer.
+- **`Tarif : …`** identique à la phrase du Sheet, ligne d'horaire, première ligne qui recopie le titre → à supprimer.
 - Ces lignes s'affichent comme du texte normal : ce n'est pas grave, seulement moins propre.
 
 ### La couleur, le nom ou la phrase sont faux
 - Ils viennent de l'onglet **Couleurs** (Teinte au format `#RRGGBB`, Nom (légende), Phrase). Une teinte mal écrite est remplacée par du brun.
 - Pour la salle JDR : colonne « Salle (JDR) » = `bloque`, `libre` ou `ligue` (vide = bloque). Un évènement sans étiquette connue ne bloque **pas** la salle. Un créneau `ligue` bloque toujours la salle, réservé ou non.
-- Créneau `ligue` : il compte comme **réservé par la Ligue** quand sa partie interne contient un bloc `[Ligue Ludique]` (écrit par la routine Ligue). Il affiche alors la colonne « Phrase si réservé (Ligue) » à la place de la Phrase, et le bouton de l'étiquette (lien « ligue » de l'onglet Liens). Pas encore réservé : la Phrase, sans bouton.
+- Créneau `ligue` : il compte comme **réservé par la Ligue** quand sa partie interne contient un bloc `[Ligue Ludique]` (écrit par la routine Ligue). Il affiche alors la colonne « Phrase si réservé (Ligue) » à la place de la Phrase, et le bouton de l'étiquette (lien « ligue » de l'onglet Liens). Pas encore réservé : la Phrase, sans bouton. La partie publique de ces créneaux reste **vide** : la tâche planifiée Ligue n'écrit que sous le marqueur, et un texte « ⏳ pas encore réservé » écrit à la main deviendrait faux dès que la Ligue réserve. Garder la ligne `---interne---` (la tâche planifiée en a besoin).
 
 ---
 
